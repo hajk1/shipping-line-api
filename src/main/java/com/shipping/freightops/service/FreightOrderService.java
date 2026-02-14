@@ -8,8 +8,6 @@ import com.shipping.freightops.enums.VoyageStatus;
 import com.shipping.freightops.repository.ContainerRepository;
 import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.VoyageRepository;
-import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

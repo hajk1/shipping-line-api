@@ -209,12 +209,12 @@ class FreightOrderControllerTest {
     }
     mockMvc
         .perform(get("/api/v1/freight-orders").param("page", "0").param("size", "101"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content").isArray())
-            .andExpect(jsonPath("$.content.length()").value(totalOrders))
-            .andExpect(jsonPath("$.page").value(0))
-            .andExpect(jsonPath("$.size").value(100))
-            .andExpect(jsonPath("$.totalElements").value(totalOrders))
-            .andExpect(jsonPath("$.totalPages").value(1));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content").isArray())
+        .andExpect(jsonPath("$.content.length()").value(totalOrders))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(100))
+        .andExpect(jsonPath("$.totalElements").value(totalOrders))
+        .andExpect(jsonPath("$.totalPages").value(1));
   }
 }
