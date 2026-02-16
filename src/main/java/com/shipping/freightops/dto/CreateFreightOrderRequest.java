@@ -12,6 +12,9 @@ public class CreateFreightOrderRequest {
   @NotNull(message = "Container ID is required")
   private Long containerId;
 
+  @NotNull(message = "Customer ID is required")
+  private Long customerId;
+
   @NotBlank(message = "orderedBy is required")
   private String orderedBy;
 
@@ -31,6 +34,14 @@ public class CreateFreightOrderRequest {
 
   public void setContainerId(Long containerId) {
     this.containerId = containerId;
+  }
+
+  public Long getCustomerId() {
+    return customerId;
+  }
+
+  public void setCustomerId(Long customerId) {
+    this.customerId = customerId;
   }
 
   public String getOrderedBy() {

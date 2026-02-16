@@ -2,10 +2,12 @@ package com.shipping.freightops.service;
 
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
 import com.shipping.freightops.entity.Container;
+import com.shipping.freightops.entity.Customer;
 import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.enums.VoyageStatus;
 import com.shipping.freightops.repository.ContainerRepository;
+import com.shipping.freightops.repository.CustomerRepository;
 import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import java.util.List;
@@ -19,14 +21,18 @@ public class FreightOrderService {
   private final FreightOrderRepository orderRepository;
   private final VoyageRepository voyageRepository;
   private final ContainerRepository containerRepository;
+  private final CustomerRepository customerRepository;
+
 
   public FreightOrderService(
-      FreightOrderRepository orderRepository,
-      VoyageRepository voyageRepository,
-      ContainerRepository containerRepository) {
+          FreightOrderRepository orderRepository,
+          VoyageRepository voyageRepository,
+          ContainerRepository containerRepository,
+          CustomerRepository customerRepository) {
     this.orderRepository = orderRepository;
     this.voyageRepository = voyageRepository;
     this.containerRepository = containerRepository;
+    this.customerRepository = customerRepository;
   }
 
   @Transactional
@@ -49,9 +55,19 @@ public class FreightOrderService {
                     new IllegalArgumentException(
                         "Container not found: " + request.getContainerId()));
 
+    Customer customer =
+            customerRepository
+                .findById(request.getCustomerId())
+                .orElseThrow(
+                    () ->
+                            new IllegalArgumentException(
+                                    "Customer not found: " + request.getCustomerId()));
+
+
     FreightOrder order = new FreightOrder();
     order.setVoyage(voyage);
     order.setContainer(container);
+    order.setCustomer(customer);
     order.setOrderedBy(request.getOrderedBy());
     order.setNotes(request.getNotes());
 
