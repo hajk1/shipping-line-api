@@ -1,10 +1,21 @@
-# Issues Backlog
+# Issues Backlog — Phase 1
+
+Core CRUD controllers and cross-cutting features to complete the boilerplate.
+
+## Issue Naming Convention
+
+All issues follow the pattern: `DOMAIN-NNN — Title`
+
+| Prefix | Domain                       |
+|--------|------------------------------|
+| `CRD`  | CRUD Controllers             |
+| `ENH`  | Enhancements & Cross-cutting |
 
 Issues are labeled by difficulty: 🟢 Easy | 🟡 Medium | 🟠 Challenging
 
 ---
 
-## Issue #1 — 🟢 Create Port CRUD Controller
+## CRD-001 — Port CRUD Controller 🟢
 
 **Labels:** `good-first-issue`, `backend`
 
@@ -36,7 +47,7 @@ Build a REST controller for managing ports.
 
 ---
 
-## Issue #2 — 🟢 Create Vessel CRUD Controller
+## CRD-002 — Vessel CRUD Controller 🟢
 
 **Labels:** `good-first-issue`, `backend`
 
@@ -67,7 +78,7 @@ Build a REST controller for managing vessels.
 
 ---
 
-## Issue #3 — 🟢 Create Container CRUD Controller
+## CRD-003 — Container CRUD Controller 🟢
 
 **Labels:** `good-first-issue`, `backend`
 
@@ -99,7 +110,7 @@ Build a REST controller for managing containers.
 
 ---
 
-## Issue #4 — 🟡 Create Voyage Controller with Business Logic
+## CRD-004 — Voyage Controller with Business Logic 🟡
 
 **Labels:** `backend`, `business-logic`
 
@@ -140,7 +151,7 @@ Build a REST controller for managing voyages. This one has more business logic t
 
 ---
 
-## Issue #5 — 🟡 Add Pagination to List Endpoints
+## ENH-001 — Pagination on List Endpoints 🟡
 
 **Labels:** `backend`, `enhancement`
 
@@ -178,7 +189,7 @@ All list endpoints currently return everything. Add pagination support using Spr
 
 ---
 
-## Issue #6 — 🟡 Add Swagger / OpenAPI Documentation
+## ENH-002 — Swagger / OpenAPI Documentation 🟡
 
 **Labels:** `backend`, `documentation`
 
@@ -201,11 +212,10 @@ Add auto-generated API docs so the team can explore endpoints in a browser.
 
 ---
 
-## Issue #7 — 🟠 List Containers on a Voyage
+## ENH-003 — List Containers on a Voyage 🟠
 
 **Labels:** `backend`, `business-logic`
-
-**Depends on:** Issue #4
+**Depends on:** `CRD-004`
 
 Add an endpoint to see all containers booked on a specific voyage.
 
@@ -239,7 +249,7 @@ Add an endpoint to see all containers booked on a specific voyage.
 
 ---
 
-## Issue #8 — 🟠 Prevent Double-Booking a Container
+## ENH-004 — Prevent Double-Booking a Container 🟠
 
 **Labels:** `backend`, `business-logic`, `bug-prevention`
 
@@ -261,4 +271,23 @@ Currently nothing stops the same container from being booked on overlapping voya
 - [ ] At least two tests: one blocked, one allowed after cancellation
 - [ ] Code is formatted
 
+---
 
+## Dependency Graph
+
+```
+CRD-001 (Port)         ─┐
+CRD-002 (Vessel)        ├──→ CRD-004 (Voyage) ──→ ENH-003 (Voyage Containers)
+CRD-003 (Container)    ─┘
+
+ENH-001 (Pagination)        — independent
+ENH-002 (Swagger)            — independent
+ENH-004 (Double-Booking)     — independent
+```
+
+## Suggested Order
+
+1. **Start with** `CRD-001`, `CRD-002`, `CRD-003` — independent, pick any
+2. **Then** `CRD-004` — needs ports and vessels to exist
+3. **In parallel** `ENH-001`, `ENH-002`, `ENH-004` — can be done anytime
+4. **Last** `ENH-003` — needs `CRD-004` done first
