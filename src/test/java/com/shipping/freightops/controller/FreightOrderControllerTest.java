@@ -12,6 +12,7 @@ import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.repository.ContainerRepository;
+import com.shipping.freightops.repository.CustomerRepository;
 import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.PortRepository;
 import com.shipping.freightops.repository.VesselRepository;
@@ -136,6 +137,7 @@ class FreightOrderControllerTest {
       order.setOrderedBy("user-" + i);
       order.setNotes("order-" + i);
       order.setStatus(OrderStatus.PENDING);
+      order.setCustomer(savedCustomer);
 
       freightOrderRepository.save(order);
     }
@@ -165,6 +167,7 @@ class FreightOrderControllerTest {
       order.setOrderedBy("user-" + i);
       order.setNotes("order-" + i);
       order.setStatus(OrderStatus.PENDING);
+      order.setCustomer(savedCustomer);
 
       freightOrderRepository.save(order);
     }
@@ -191,6 +194,7 @@ class FreightOrderControllerTest {
       order.setOrderedBy("user-" + i);
       order.setNotes("order-" + i);
       order.setStatus(OrderStatus.PENDING);
+      order.setCustomer(savedCustomer);
 
       freightOrderRepository.save(order);
     }
@@ -218,6 +222,7 @@ class FreightOrderControllerTest {
       order.setOrderedBy("user-" + i);
       order.setNotes("order-" + i);
       order.setStatus(OrderStatus.PENDING);
+      order.setCustomer(savedCustomer);
 
       freightOrderRepository.save(order);
     }
