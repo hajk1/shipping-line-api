@@ -16,6 +16,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -124,5 +127,13 @@ public class VoyageService {
     voyagePrice.setBasePriceUsd(voyagePriceRequest.getBasePriceUsd());
 
     return voyagePriceRepository.save(voyagePrice);
+  }
+
+  @Transactional(readOnly = true)
+  public Page<VoyagePrice> getAllPricesByVoyageId(Long voyageId, Pageable pageable) {
+    if (!voyageRepository.existsById(voyageId)) {
+      throw new IllegalArgumentException("Voyage not found");
+    }
+    return voyagePriceRepository.findByVoyageId(voyageId, pageable);
   }
 }

@@ -1,9 +1,6 @@
 package com.shipping.freightops.controller;
 
-import com.shipping.freightops.dto.CreateVoyageRequest;
-import com.shipping.freightops.dto.VoyagePriceRequest;
-import com.shipping.freightops.dto.VoyagePriceResponse;
-import com.shipping.freightops.dto.VoyageResponse;
+import com.shipping.freightops.dto.*;
 import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.entity.VoyagePrice;
 import com.shipping.freightops.enums.VoyageStatus;
@@ -11,6 +8,10 @@ import com.shipping.freightops.service.VoyageService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,5 +63,13 @@ public class VoyageController {
       @PathVariable Long voyageId, @Valid @RequestBody VoyagePriceRequest voyagePriceRequest) {
     VoyagePrice voyagePrice = voyageService.createVoyagePrice(voyageId, voyagePriceRequest);
     return ResponseEntity.ok(VoyagePriceResponse.fromEntity(voyagePrice));
+  }
+
+  @GetMapping("/{voyageId}/prices")
+  public ResponseEntity<PageResponse<VoyagePriceResponse>> getVoyagePrices(
+      @PathVariable Long voyageId, @PageableDefault(size = 20) Pageable pageable) {
+    Page<VoyagePrice> voyagePrices = voyageService.getAllPricesByVoyageId(voyageId, pageable);
+    Page<VoyagePriceResponse> mapped = voyagePrices.map(VoyagePriceResponse::fromEntity);
+    return ResponseEntity.ok(PageResponse.from(mapped));
   }
 }
