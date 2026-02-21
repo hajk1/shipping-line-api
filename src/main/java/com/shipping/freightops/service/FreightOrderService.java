@@ -1,12 +1,15 @@
 package com.shipping.freightops.service;
 
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
+import com.shipping.freightops.dto.UpdateDiscountRequest;
 import com.shipping.freightops.entity.*;
 import com.shipping.freightops.enums.ContainerSize;
+import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.enums.VoyageStatus;
 import com.shipping.freightops.exception.BadRequestException;
 import com.shipping.freightops.repository.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -72,9 +75,7 @@ public class FreightOrderService {
     BigDecimal basePriceUsd = voyagePrice.getBasePriceUsd();
     BigDecimal discountPercentage =
         request.getDiscountPercent() != null ? request.getDiscountPercent() : BigDecimal.ZERO;
-    BigDecimal finalPriceUsd =
-        basePriceUsd.multiply(
-            (BigDecimal.ONE.subtract(discountPercentage.divide(BigDecimal.valueOf(100)))));
+    BigDecimal finalPriceUsd = calculateFinalPrice(basePriceUsd, request.getDiscountPercent());
 
     FreightOrder order = new FreightOrder();
     order.setVoyage(voyage);
@@ -104,5 +105,29 @@ public class FreightOrderService {
   @Transactional(readOnly = true)
   public Page<FreightOrder> getOrdersByVoyage(Long voyageId, Pageable pageable) {
     return orderRepository.findByVoyageId(voyageId, pageable);
+  }
+
+  @Transactional
+  public FreightOrder updateDiscount(Long id, UpdateDiscountRequest request) {
+    FreightOrder order =
+        orderRepository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Freight order not found: " + id));
+
+    if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.DELIVERED)
+      throw new IllegalStateException(
+          "New discount cannot be applied on the cancelled or delivered freight order");
+
+    order.setDiscountPercent(request.getDiscountPercent());
+    order.setDiscountReason(request.getReason());
+    order.setFinalPrice(calculateFinalPrice(order.getBasePriceUsd(), order.getDiscountPercent()));
+    return orderRepository.save(order);
+  }
+
+  private BigDecimal calculateFinalPrice(BigDecimal basePriceUsd, BigDecimal discountPercent) {
+    BigDecimal discount = discountPercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+    return basePriceUsd
+        .multiply(BigDecimal.ONE.subtract(discount))
+        .setScale(2, RoundingMode.HALF_UP);
   }
 }
