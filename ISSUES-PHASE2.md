@@ -1,7 +1,7 @@
 # Issues Backlog — Phase 2
 
-Builds on top of Phase 1 issues (#1–8). These introduce pricing, invoicing, vessel planning, load
-management, multi-ownership, and commission tracking.
+Builds on top of Phase 1 issues. These introduce pricing, invoicing, vessel planning, load
+management, multi-ownership, commission tracking, and barcode-based shipment tracking.
 
 ## Issue Naming Convention
 
@@ -15,6 +15,7 @@ All issues follow the pattern: `DOMAIN-NNN — Title`
 | `VPL`  | Vessel Planning & Load |
 | `FIN`  | Finance & Ownership    |
 | `AGT`  | Agents & Commissions   |
+| `TRK`  | Tracking & Barcodes    |
 
 When referencing dependencies, use the full code (e.g. "Depends on `PRC-001`").
 
@@ -31,20 +32,17 @@ Voyages should define a base freight price per container size. When a freight or
 price is derived from the voyage pricing.
 
 **New entity: `VoyagePrice`**
-
 - `voyageId` (FK to Voyage)
 - `containerSize` (TWENTY_FOOT / FORTY_FOOT)
 - `basePriceUsd` (BigDecimal)
 - Unique constraint on (`voyageId`, `containerSize`)
 
 **Update `FreightOrder` entity:**
-
 - Add `basePriceUsd` (BigDecimal) — copied from `VoyagePrice` at order creation time
 - Add `discountPercent` (BigDecimal, default 0, range 0–100)
 - Add `finalPriceUsd` (BigDecimal) — computed as `basePriceUsd * (1 - discountPercent / 100)`
 
 **New endpoints:**
-
 - `POST /api/v1/voyages/{voyageId}/prices` — set price for a container size on a voyage
 - `GET /api/v1/voyages/{voyageId}/prices` — list prices for a voyage
 
@@ -55,7 +53,6 @@ price is derived from the voyage pricing.
 - If no price is defined for that container size on the voyage, return 400 with a clear message
 
 **Acceptance criteria:**
-
 - [ ] Voyage prices can be set per container size
 - [ ] Order creation auto-populates price from voyage
 - [ ] `finalPriceUsd` is calculated correctly
@@ -73,11 +70,9 @@ price is derived from the voyage pricing.
 Allow setting or updating a discount on a freight order, both at creation and after.
 
 **New endpoint:**
-
 - `PATCH /api/v1/freight-orders/{id}/discount` — update discount on an existing order
 
 **Request body:**
-
 ```json
 {
   "discountPercent": 15.0,
@@ -86,7 +81,6 @@ Allow setting or updating a discount on a freight order, both at creation and af
 ```
 
 **Update `FreightOrder` entity:**
-
 - Add `discountReason` (String, nullable, max 500 chars)
 
 **Business rules:**
@@ -98,7 +92,6 @@ Allow setting or updating a discount on a freight order, both at creation and af
 - Discount cannot be changed on `CANCELLED` or `DELIVERED` orders (return 409)
 
 **Acceptance criteria:**
-
 - [ ] Discount can be applied at creation and updated later
 - [ ] `finalPriceUsd` recalculates correctly on every discount change
 - [ ] Validation enforces 0–100 range
@@ -116,7 +109,6 @@ Before we can send invoices, we need to know who the customer is. Create a `Cust
 link freight orders to it.
 
 **New entity: `Customer`**
-
 - `id`, `createdAt`, `updatedAt` (from BaseEntity)
 - `companyName` (String, required)
 - `contactName` (String, required)
@@ -125,19 +117,16 @@ link freight orders to it.
 - `address` (String, optional)
 
 **New endpoints:**
-
 - `POST /api/v1/customers` — create
 - `GET /api/v1/customers` — list
 - `GET /api/v1/customers/{id}` — get by ID
 
 **Update `FreightOrder`:**
-
 - Add `customerId` (FK to Customer, required)
 - Update `CreateFreightOrderRequest` to include `customerId`
 - Update `FreightOrderResponse` to include `customerName` and `customerEmail`
 
 **Acceptance criteria:**
-
 - [ ] Customer CRUD works
 - [ ] Email validation enforced
 - [ ] Freight orders require a valid customer
@@ -154,11 +143,9 @@ link freight orders to it.
 When a freight order is marked as `DELIVERED`, generate a PDF invoice and allow it to be downloaded.
 
 **New endpoint:**
-
 - `GET /api/v1/freight-orders/{id}/invoice` — returns PDF (Content-Type: `application/pdf`)
 
 **Invoice should include:**
-
 - Invoice number (auto-generated, e.g. `INV-2025-00042`)
 - Customer name, email, address
 - Voyage number, departure/arrival ports
@@ -168,19 +155,16 @@ When a freight order is marked as `DELIVERED`, generate a PDF invoice and allow 
 - Company footer (hardcode for now)
 
 **Technical hints:**
-
 - Use a PDF library — `iText` (AGPL) or `OpenPDF` (LGPL, recommended for POC)
 - Add dependency to `pom.xml`
 - Create an `InvoiceService` that builds the PDF as a `byte[]`
 - Controller returns `ResponseEntity<byte[]>` with proper headers
 
 **Business rules:**
-
 - Invoice can only be generated for orders with status `DELIVERED`
 - Return 409 if order is not yet delivered
 
 **Acceptance criteria:**
-
 - [ ] PDF downloads for delivered orders
 - [ ] PDF contains all required fields
 - [ ] Returns 409 for non-delivered orders
@@ -197,30 +181,25 @@ When a freight order is marked as `DELIVERED`, generate a PDF invoice and allow 
 Add ability to email the invoice PDF to the customer.
 
 **New endpoint:**
-
 - `POST /api/v1/freight-orders/{id}/invoice/send` — generates and emails the invoice
 
 **Setup:**
-
 - Add `spring-boot-starter-mail` dependency
 - Configure SMTP in `application.properties` (use environment variables for credentials)
 - For local dev, document how to use [MailHog](https://github.com/mailhog/MailHog)
   or [Mailtrap](https://mailtrap.io/)
 
 **What to create:**
-
 - `EmailService` — generic email sender (to, subject, body, attachment)
 - Wire it into `InvoiceService` or create an `InvoiceEmailService`
 
 **Business rules:**
-
 - Can only send invoice for `DELIVERED` orders
 - Email goes to the customer's email address from the `Customer` entity
 - Subject: `Invoice INV-2025-XXXXX — Voyage VOY-XXXX`
 - Body: brief text with order summary, PDF as attachment
 
 **Acceptance criteria:**
-
 - [ ] Email sends with PDF attachment for delivered orders
 - [ ] Returns 409 for non-delivered orders
 - [ ] README updated with SMTP / MailHog setup instructions
@@ -237,17 +216,14 @@ Add ability to email the invoice PDF to the customer.
 Track the current load on a voyage (in TEU) and allow ops to manually stop accepting new orders.
 
 **Update `Voyage` entity:**
-
 - Add `maxCapacityTeu` (int) — defaults from `vessel.capacityTeu` at creation but can be overridden
 - Add `bookingOpen` (boolean, default `true`)
 
 **New endpoints:**
-
 - `GET /api/v1/voyages/{id}/load` — returns current load summary
 - `PATCH /api/v1/voyages/{id}/booking-status` — manually open or close bookings
 
 **Load summary response:**
-
 ```json
 {
   "voyageNumber": "VOY-2025-001",
@@ -260,7 +236,6 @@ Track the current load on a voyage (in TEU) and allow ops to manually stop accep
 ```
 
 **TEU calculation:**
-
 - TWENTY_FOOT = 1 TEU
 - FORTY_FOOT = 2 TEU
 - Only count orders with status `PENDING`, `CONFIRMED`, or `IN_TRANSIT`
@@ -272,7 +247,6 @@ Track the current load on a voyage (in TEU) and allow ops to manually stop accep
 - Manual toggle via PATCH overrides everything
 
 **Acceptance criteria:**
-
 - [ ] Load endpoint returns correct TEU count and utilization
 - [ ] Ops can manually close/open bookings
 - [ ] Closed voyages reject new freight orders with 409
@@ -289,11 +263,9 @@ Track the current load on a voyage (in TEU) and allow ops to manually stop accep
 Automatically close bookings when a voyage reaches a configurable capacity threshold.
 
 **Configuration:**
-
 - Add `app.booking.auto-cutoff-percent` to `application.properties` (default: 95)
 
 **Behavior:**
-
 - After every successful `createOrder()`, check current load vs `maxCapacityTeu`
 - If `currentLoadTeu / maxCapacityTeu >= threshold`, automatically set `bookingOpen = false`
 - Log a warning when auto-cutoff triggers
@@ -305,7 +277,6 @@ Automatically close bookings when a voyage reaches a configurable capacity thres
   a clear message explaining remaining TEU
 
 **Acceptance criteria:**
-
 - [ ] Auto-cutoff triggers at the configured threshold
 - [ ] Orders that would exceed remaining TEU are rejected
 - [ ] Manual reopen still works after auto-cutoff
@@ -323,7 +294,6 @@ A vessel can have multiple owners with different ownership shares. This is neede
 splitting after a voyage.
 
 **New entity: `VesselOwner`**
-
 - `id`, `createdAt`, `updatedAt` (from BaseEntity)
 - `vesselId` (FK to Vessel)
 - `ownerName` (String, required)
@@ -333,18 +303,15 @@ splitting after a voyage.
 **Constraint:** The sum of all `sharePercent` values for a vessel must not exceed 100.
 
 **New endpoints:**
-
 - `POST /api/v1/vessels/{vesselId}/owners` — add an owner
 - `GET /api/v1/vessels/{vesselId}/owners` — list owners with shares
 - `DELETE /api/v1/vessels/{vesselId}/owners/{ownerId}` — remove an owner
 
 **Validation rules:**
-
 - Adding an owner that would push total above 100% returns 409
 - `sharePercent` must be greater than 0
 
 **Acceptance criteria:**
-
 - [ ] Multiple owners can be added per vessel
 - [ ] Share total cannot exceed 100%
 - [ ] Owners can be listed and removed
@@ -362,20 +329,17 @@ After a voyage is `COMPLETED`, generate a financial summary showing revenue, cos
 per vessel owner.
 
 **New entity: `VoyageCost`**
-
 - `id`, `createdAt`, `updatedAt` (from BaseEntity)
 - `voyageId` (FK to Voyage)
 - `description` (String — e.g. "Fuel", "Port fees", "Crew")
 - `amountUsd` (BigDecimal)
 
 **New endpoints:**
-
 - `POST /api/v1/voyages/{voyageId}/costs` — add a cost line item
 - `GET /api/v1/voyages/{voyageId}/costs` — list cost items
 - `GET /api/v1/voyages/{voyageId}/financial-summary` — full breakdown
 
 **Financial summary response:**
-
 ```json
 {
   "voyageNumber": "VOY-2025-001",
@@ -403,7 +367,6 @@ per vessel owner.
 ```
 
 **Business rules:**
-
 - Revenue = sum of `finalPriceUsd` from all `DELIVERED` freight orders on the voyage
 - Costs = sum of all `VoyageCost` items
 - Profit = Revenue - Costs
@@ -411,7 +374,6 @@ per vessel owner.
 - Summary can only be generated for `COMPLETED` voyages (return 409 otherwise)
 
 **Acceptance criteria:**
-
 - [ ] Costs can be added and listed
 - [ ] Financial summary calculates correctly
 - [ ] Profit splits match owner share percentages
@@ -429,7 +391,6 @@ Replace the free-text `orderedBy` field with a proper `Agent` entity to track in
 future external freight forwarders.
 
 **New entity: `Agent`**
-
 - `id`, `createdAt`, `updatedAt` (from BaseEntity)
 - `name` (String, required)
 - `email` (String, required)
@@ -438,14 +399,12 @@ future external freight forwarders.
 - `active` (boolean, default true)
 
 **New endpoints:**
-
 - `POST /api/v1/agents` — create
 - `GET /api/v1/agents` — list (optional filter by `type` and `active`)
 - `GET /api/v1/agents/{id}` — get by ID
 - `PATCH /api/v1/agents/{id}` — update commission rate or active status
 
 **Update `FreightOrder`:**
-
 - Replace `orderedBy` (String) with `agentId` (FK to Agent)
 - Update DTOs and existing tests accordingly
 
@@ -453,7 +412,6 @@ future external freight forwarders.
 description. For the POC, dropping and recreating is fine — document it.
 
 **Acceptance criteria:**
-
 - [ ] Agent CRUD works with type and active filters
 - [ ] Freight orders now reference an agent
 - [ ] Existing `FreightOrderController` and tests updated
@@ -470,11 +428,9 @@ description. For the POC, dropping and recreating is fine — document it.
 After a voyage is `COMPLETED`, calculate each agent's commission from the orders they placed.
 
 **New endpoint:**
-
 - `GET /api/v1/voyages/{voyageId}/commissions` — agent commission breakdown
 
 **Commission report response:**
-
 ```json
 {
   "voyageNumber": "VOY-2025-001",
@@ -508,7 +464,6 @@ After a voyage is `COMPLETED`, calculate each agent's commission from the orders
 - Only `COMPLETED` voyages (return 409 otherwise)
 
 **Acceptance criteria:**
-
 - [ ] Commission calculates correctly per agent
 - [ ] Mixed internal/external agents handled
 - [ ] Returns 409 for non-completed voyages
@@ -525,24 +480,20 @@ After a voyage is `COMPLETED`, calculate each agent's commission from the orders
 Add ability to email each agent their commission statement after a voyage completes.
 
 **New endpoint:**
-
 - `POST /api/v1/voyages/{voyageId}/commissions/send` — calculates and emails each agent
 
 **Behavior:**
-
 - For each agent with orders on the voyage, generate a summary and email it
 - Email subject: `Commission Statement — Voyage VOY-XXXX`
 - Body: text summary of their orders, total value, commission earned
 - Optional: attach a PDF (reuse PDF generation pattern from `INV-001`)
 
 **Business rules:**
-
 - Only for `COMPLETED` voyages
 - Only sends to active agents
 - Returns a summary of how many emails were sent
 
 **Response:**
-
 ```json
 {
   "voyageNumber": "VOY-2025-001",
@@ -552,11 +503,388 @@ Add ability to email each agent their commission statement after a voyage comple
 ```
 
 **Acceptance criteria:**
-
 - [ ] Emails sent to each active agent with orders
 - [ ] Inactive agents are skipped
 - [ ] Returns 409 for non-completed voyages
 - [ ] Test with mocked `JavaMailSender`
+- [ ] Code is formatted
+
+---
+
+## TRK-001 — Barcode and QR Code Generation Service 🟡
+
+**Labels:** `backend`, `enhancement`, `tracking`
+
+Add a reusable service that generates Code 128 barcodes and QR codes as PNG byte arrays. This is the
+foundation for all tracking and label features.
+
+**Setup:**
+
+- Add ZXing (Zebra Crossing) dependency to `pom.xml`:
+  ```xml
+  <dependency>
+    <groupId>com.google.zxing</groupId>
+    <artifactId>core</artifactId>
+    <version>3.5.3</version>
+  </dependency>
+  <dependency>
+    <groupId>com.google.zxing</groupId>
+    <artifactId>javase</artifactId>
+    <version>3.5.3</version>
+  </dependency>
+  ```
+
+**What to create:**
+
+**`BarcodeService`** with two methods:
+
+- `byte[] generateBarcode(String content, int width, int height)` — Code 128 linear barcode
+- `byte[] generateQrCode(String content, int width, int height)` — QR code
+
+Both return a PNG image as `byte[]`.
+
+**New endpoints (for testing/demo):**
+
+- `GET /api/v1/barcodes/code128?content=MSCU1234567&width=300&height=80` — returns PNG
+- `GET /api/v1/barcodes/qr?content=https://example.com/track/FO-001&width=250&height=250` — returns
+  PNG
+
+Set `Content-Type: image/png` on the response.
+
+**Hints:**
+
+- Use `MultiFormatWriter` from ZXing for generation
+- Use `MatrixToImageWriter` from `zxing-javase` to convert `BitMatrix` → PNG bytes
+- Keep the service stateless and injectable — other issues will depend on it
+
+**Acceptance criteria:**
+
+- [ ] ZXing dependencies added
+- [ ] `BarcodeService` generates both Code 128 and QR code as PNG
+- [ ] Demo endpoints return valid images
+- [ ] Unit test verifies generated byte array is a valid PNG (starts with PNG magic bytes)
+- [ ] Code is formatted
+
+---
+
+## TRK-002 — Public Tracking Endpoint 🟡
+
+**Labels:** `backend`, `business-logic`, `tracking`
+**Depends on:** Phase 1 `CRD-004` (Voyage Controller)
+
+Create a public-facing, read-only endpoint that lets anyone check the status of a freight order or
+container by its code. This is the URL that QR codes will point to.
+
+**New endpoints:**
+
+- `GET /api/v1/track/order/{orderId}` — track a freight order
+- `GET /api/v1/track/container/{containerCode}` — track a container across all its voyages
+
+**Order tracking response:**
+
+```json
+{
+  "orderId": 42,
+  "status": "IN_TRANSIT",
+  "containerCode": "MSCU1234567",
+  "containerSize": "TWENTY_FOOT",
+  "containerType": "DRY",
+  "voyageNumber": "VOY-2025-001",
+  "vesselName": "MV Freight Star",
+  "departurePort": "Jebel Ali",
+  "arrivalPort": "Shanghai",
+  "departureTime": "2025-04-01T08:00:00",
+  "estimatedArrival": "2025-04-15T18:00:00",
+  "voyageStatus": "IN_PROGRESS"
+}
+```
+
+**Container tracking response:**
+
+```json
+{
+  "containerCode": "MSCU1234567",
+  "size": "TWENTY_FOOT",
+  "type": "DRY",
+  "voyages": [
+    {
+      "voyageNumber": "VOY-2025-001",
+      "status": "COMPLETED",
+      "departurePort": "Jebel Ali",
+      "arrivalPort": "Shanghai",
+      "departureTime": "2025-03-01T08:00:00",
+      "arrivalTime": "2025-03-15T18:00:00"
+    },
+    {
+      "voyageNumber": "VOY-2025-007",
+      "status": "IN_PROGRESS",
+      "departurePort": "Shanghai",
+      "arrivalPort": "Rotterdam",
+      "departureTime": "2025-04-01T08:00:00",
+      "arrivalTime": "2025-04-20T18:00:00"
+    }
+  ]
+}
+```
+
+**What to create:**
+
+- `TrackingController` — separate controller, no auth required
+- `TrackingService` — queries orders/containers and assembles the response
+- `OrderTrackingResponse` and `ContainerTrackingResponse` DTOs
+
+**Business rules:**
+
+- These endpoints are read-only, no mutations
+- Return 404 with a clear message if order or container not found
+- Container tracking shows all voyages (via freight orders), sorted by departure time
+
+**Acceptance criteria:**
+
+- [ ] Order tracking returns current status and voyage info
+- [ ] Container tracking returns full voyage history
+- [ ] 404 for unknown order ID or container code
+- [ ] At least 2 tests (one per endpoint)
+- [ ] Code is formatted
+
+---
+
+## TRK-003 — Container Label PDF with QR Code 🟠
+
+**Labels:** `backend`, `business-logic`, `tracking`
+**Depends on:** `TRK-001`, `TRK-002`
+
+Generate a printable container label PDF that port and warehouse staff can scan.
+
+**New endpoint:**
+
+- `GET /api/v1/containers/{id}/label` — returns PDF (Content-Type: `application/pdf`)
+
+**Label should include:**
+
+- Container code as both human-readable text and Code 128 barcode
+- QR code encoding the tracking URL: `{app.base-url}/api/v1/track/container/{containerCode}`
+- Container size and type
+- If the container is currently booked on an active voyage, include: voyage number, vessel name,
+  departure/arrival ports, departure date
+
+**Technical hints:**
+
+- Use the same PDF library from `INV-001` (OpenPDF recommended)
+- Inject `BarcodeService` from `TRK-001` to generate barcode/QR images
+- Embed the PNG images into the PDF using the library's image API
+- Add `app.base-url` to `application.properties` (default: `http://localhost:8080`)
+
+**Label layout suggestion:**
+
+```
+┌──────────────────────────────────┐
+│  MSCU1234567                     │
+│  |||||||||||||||||||||| (Code128)│
+│                                  │
+│  Size: 20ft    Type: DRY        │
+│                                  │
+│  Voyage: VOY-2025-001           │
+│  Vessel: MV Freight Star        │
+│  Jebel Ali → Shanghai           │
+│  Departure: 2025-04-01          │
+│                                  │
+│  ┌─────────┐                    │
+│  │  QR     │  Scan to track     │
+│  │  Code   │                    │
+│  └─────────┘                    │
+└──────────────────────────────────┘
+```
+
+**Acceptance criteria:**
+
+- [ ] PDF generates with barcode and QR code
+- [ ] QR code encodes the correct tracking URL
+- [ ] Voyage info shown if container is on an active booking
+- [ ] Label works without active booking (shows container info only)
+- [ ] Test verifies 200 response with `application/pdf` content type
+- [ ] Code is formatted
+
+---
+
+## TRK-004 — Embed QR Code into Invoice PDF 🟡
+
+**Labels:** `backend`, `enhancement`, `tracking`, `invoicing`
+**Depends on:** `TRK-001`, `INV-001`
+
+Add a QR code to the invoice PDF that links to the order tracking page.
+
+**Changes to `InvoiceService` (from `INV-001`):**
+
+- After the existing invoice content, add a QR code in the bottom-right area
+- QR encodes: `{app.base-url}/api/v1/track/order/{orderId}`
+- Add small label text below the QR: "Scan to track your shipment"
+
+**Technical hints:**
+
+- Inject `BarcodeService` from `TRK-001`
+- Generate QR as `byte[]`, embed as image in the PDF
+- Keep it small (e.g. 100x100 px) so it doesn't dominate the invoice layout
+
+**Acceptance criteria:**
+
+- [ ] Invoice PDF now includes a QR code
+- [ ] QR encodes the correct tracking URL
+- [ ] Existing invoice tests still pass
+- [ ] QR is positioned cleanly and doesn't overlap other content
+- [ ] Code is formatted
+
+---
+
+## TRK-005 — Tracking Event Log 🟠
+
+**Labels:** `backend`, `business-logic`, `tracking`
+**Depends on:** `TRK-002`
+
+Log status changes and scan events to build a full audit trail for each freight order. This is the
+backbone of shipment visibility.
+
+**New entity: `TrackingEvent`**
+
+- `id`, `createdAt`, `updatedAt` (from BaseEntity)
+- `freightOrderId` (FK to FreightOrder)
+- `eventType` (enum: `STATUS_CHANGE`, `GATE_IN`, `GATE_OUT`, `LOADED`, `DISCHARGED`,
+  `CUSTOMS_CLEARED`, `NOTE`)
+- `description` (String — e.g. "Status changed from PENDING to CONFIRMED")
+- `location` (String, optional — e.g. "Jebel Ali Terminal 2")
+- `performedBy` (String, optional — e.g. "scanner-T2-gate" or agent name)
+- `eventTime` (LocalDateTime — when it actually happened, may differ from `createdAt`)
+
+**New endpoints:**
+
+- `POST /api/v1/freight-orders/{id}/events` — log a new tracking event
+- `GET /api/v1/freight-orders/{id}/events` — list all events for an order (sorted by `eventTime`
+  ascending)
+
+**Automatic event creation:**
+
+- When a freight order status changes (in `FreightOrderService`), automatically create a
+  `STATUS_CHANGE` event with a description like "Status changed from PENDING to CONFIRMED"
+- Manual events (gate scans, notes) are added via the POST endpoint
+
+**Update tracking endpoint (`TRK-002`):**
+
+- Add an `events` array to the order tracking response so the tracking page shows the full timeline
+
+**Event list response:**
+
+```json
+[
+  {
+    "eventType": "STATUS_CHANGE",
+    "description": "Order created with status PENDING",
+    "location": null,
+    "performedBy": "ops-team",
+    "eventTime": "2025-03-28T09:15:00"
+  },
+  {
+    "eventType": "GATE_IN",
+    "description": "Container entered terminal",
+    "location": "Jebel Ali Terminal 2",
+    "performedBy": "scanner-T2-gate",
+    "eventTime": "2025-03-30T14:22:00"
+  },
+  {
+    "eventType": "LOADED",
+    "description": "Container loaded onto MV Freight Star",
+    "location": "Jebel Ali Berth 4",
+    "performedBy": "crane-operator-B4",
+    "eventTime": "2025-04-01T06:45:00"
+  },
+  {
+    "eventType": "STATUS_CHANGE",
+    "description": "Status changed from CONFIRMED to IN_TRANSIT",
+    "location": null,
+    "performedBy": "system",
+    "eventTime": "2025-04-01T08:00:00"
+  }
+]
+```
+
+**Acceptance criteria:**
+
+- [ ] Manual events can be logged via POST
+- [ ] Status changes automatically create events
+- [ ] Events listed in chronological order
+- [ ] Tracking endpoint includes event timeline
+- [ ] At least 3 tests: manual event, auto status event, event listing
+- [ ] Code is formatted
+
+---
+
+## TRK-006 — Gate Pass PDF with QR Code 🔴
+
+**Labels:** `backend`, `business-logic`, `tracking`
+**Depends on:** `TRK-001`, `TRK-002`, `TRK-005`, `CST-001`
+
+Generate a gate pass document that authorizes a container to enter or leave a port terminal. This is
+a standard document in freight operations.
+
+**New endpoint:**
+
+- `GET /api/v1/freight-orders/{id}/gate-pass` — returns PDF (Content-Type: `application/pdf`)
+
+**Gate pass should include:**
+
+- Gate pass number (auto-generated, e.g. `GP-2025-00042`)
+- QR code encoding the tracking URL for the order
+- Container code with Code 128 barcode
+- Container size and type
+- Voyage number, vessel name
+- Departure port and arrival port
+- Customer company name
+- Agent name (if `AGT-001` is done, otherwise `orderedBy`)
+- Valid date range (departure date ± 3 days for buffer)
+- Large bold text: `GATE IN` or `GATE OUT` (request param: `direction=IN|OUT`)
+
+**New endpoint parameter:**
+
+- `GET /api/v1/freight-orders/{id}/gate-pass?direction=IN`
+
+**Gate pass layout suggestion:**
+
+```
+┌─────────────────────────────────────┐
+│         *** GATE IN PASS ***        │
+│         GP-2025-00042               │
+│                                     │
+│  Container: MSCU1234567             │
+│  |||||||||||||||||||||||| (Code128) │
+│  Size: 20ft    Type: DRY           │
+│                                     │
+│  Voyage: VOY-2025-001              │
+│  Vessel: MV Freight Star           │
+│  Route: Jebel Ali → Shanghai       │
+│                                     │
+│  Customer: Acme Trading LLC        │
+│  Valid: 2025-03-29 to 2025-04-04   │
+│                                     │
+│  ┌─────────┐                       │
+│  │  QR     │  Scan to track        │
+│  │  Code   │                       │
+│  └─────────┘                       │
+└─────────────────────────────────────┘
+```
+
+**Business rules:**
+
+- Gate pass can only be generated for orders with status `PENDING`, `CONFIRMED`, or `IN_TRANSIT`
+- Return 409 if order is `CANCELLED` or `DELIVERED`
+- `direction` parameter is required, return 400 if missing
+
+**Acceptance criteria:**
+
+- [ ] PDF generates with both barcode and QR code
+- [ ] Direction (IN/OUT) shown prominently
+- [ ] Valid date range calculated from voyage departure
+- [ ] Returns 409 for cancelled/delivered orders
+- [ ] Returns 400 for missing direction parameter
+- [ ] Test verifies PDF generation for both directions
 - [ ] Code is formatted
 
 ---
@@ -572,11 +900,13 @@ PRC-001 (Voyage Pricing)
 
 CST-001 (Customer Entity)
   ├──→ INV-001 (Invoice PDF)
-  └──→ INV-002 (Email Invoice)
+  ├──→ INV-002 (Email Invoice)
+  └──→ TRK-006 (Gate Pass PDF)
 
 INV-001 (Invoice PDF)
-  └──→ INV-002 (Email Invoice)
-       └──→ AGT-003 (Email Commission)
+  ├──→ INV-002 (Email Invoice)
+  │    └──→ AGT-003 (Email Commission)
+  └──→ TRK-004 (QR on Invoice)
 
 VPL-001 (Load Tracking)
   └──→ VPL-002 (Auto Cutoff)
@@ -587,17 +917,31 @@ FIN-001 (Vessel Ownership)
 AGT-001 (Agent Entity)
   └──→ AGT-002 (Commission Calc)
        └──→ AGT-003 (Email Commission)
+
+TRK-001 (Barcode Service)
+  ├──→ TRK-003 (Container Label PDF)
+  ├──→ TRK-004 (QR on Invoice)
+  └──→ TRK-006 (Gate Pass PDF)
+
+TRK-002 (Public Tracking)
+  ├──→ TRK-003 (Container Label PDF)
+  ├──→ TRK-005 (Tracking Events)
+  │    └──→ TRK-006 (Gate Pass PDF)
+  └──→ TRK-004 (QR on Invoice)
 ```
 
 ## Suggested Team Allocation
 
-| Track | Issues                                        | Can start when                  |
-|-------|-----------------------------------------------|---------------------------------|
-| A     | `PRC-001` → `PRC-002` → `INV-001` → `INV-002` | Phase 1 complete                |
-| B     | `VPL-001` → `VPL-002`                         | Phase 1 Issue #4 complete       |
-| C     | `FIN-001` → `FIN-002`                         | `PRC-001` + `FIN-001` complete  |
-| D     | `AGT-001` → `AGT-002` → `AGT-003`             | `PRC-001` + `AGT-001` complete  |
-| —     | `CST-001`                                     | Anytime (no Phase 2 dependency) |
+| Track | Issues                                        | Can start when                               |
+|-------|-----------------------------------------------|----------------------------------------------|
+| A     | `PRC-001` → `PRC-002` → `INV-001` → `INV-002` | Phase 1 complete                             |
+| B     | `VPL-001` → `VPL-002`                         | Phase 1 `CRD-004` complete                   |
+| C     | `FIN-001` → `FIN-002`                         | `PRC-001` + `FIN-001` complete               |
+| D     | `AGT-001` → `AGT-002` → `AGT-003`             | `PRC-001` + `AGT-001` complete               |
+| E     | `TRK-001` → `TRK-002` → `TRK-005` → `TRK-006` | `TRK-001` anytime; `TRK-006` needs `CST-001` |
+| —     | `CST-001`                                     | Anytime (no Phase 2 dependency)              |
+| —     | `TRK-003`                                     | After `TRK-001` + `TRK-002`                  |
+| —     | `TRK-004`                                     | After `TRK-001` + `INV-001`                  |
 
-Tracks A and B can run fully in parallel. Tracks C and D can start their first issue immediately but
-need `PRC-001` before the calculation issues.
+Tracks A, B, and E can run fully in parallel. `TRK-003` and `TRK-004` are good single-issue pickups
+for someone finishing early.
