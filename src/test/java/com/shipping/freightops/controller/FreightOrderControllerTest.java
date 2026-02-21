@@ -10,13 +10,9 @@ import com.shipping.freightops.dto.CreateFreightOrderRequest;
 import com.shipping.freightops.entity.*;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
-import com.shipping.freightops.enums.OrderStatus;
-import com.shipping.freightops.repository.ContainerRepository;
-import com.shipping.freightops.repository.CustomerRepository;
-import com.shipping.freightops.repository.FreightOrderRepository;
-import com.shipping.freightops.repository.PortRepository;
-import com.shipping.freightops.repository.VesselRepository;
-import com.shipping.freightops.repository.VoyageRepository;
+import com.shipping.freightops.repository.*;
+import com.shipping.freightops.service.FreightOrderService;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,6 +43,8 @@ class FreightOrderControllerTest {
   @Autowired private CustomerRepository customerRepository;
   @Autowired private VoyageRepository voyageRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
+  @Autowired private FreightOrderService freightOrderService;
 
   private Voyage savedVoyage;
   private Container savedContainer;
@@ -56,12 +54,12 @@ class FreightOrderControllerTest {
   void setUp() {
     // Clear state between tests — children first to respect FK constraints
     freightOrderRepository.deleteAll();
+    voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     containerRepository.deleteAll();
     customerRepository.deleteAll();
     vesselRepository.deleteAll();
     portRepository.deleteAll();
-
     Port departure = portRepository.save(new Port("AEJEA", "Jebel Ali", "UAE"));
     Port arrival = portRepository.save(new Port("CNSHA", "Shanghai", "China"));
     Vessel vessel = vesselRepository.save(new Vessel("MV Test", "9999999", 3000));
@@ -84,6 +82,12 @@ class FreightOrderControllerTest {
     customer.setContactName("John Doe");
     customer.setEmail("John@testCust.com");
     savedCustomer = customerRepository.save(customer);
+
+    VoyagePrice price = new VoyagePrice();
+    price.setVoyage(savedVoyage);
+    price.setContainerSize(ContainerSize.TWENTY_FOOT);
+    price.setBasePriceUsd(BigDecimal.valueOf(1000));
+    voyagePriceRepository.save(price);
   }
 
   @Test
@@ -131,15 +135,14 @@ class FreightOrderControllerTest {
     int pageSize = 10;
 
     for (int i = 0; i < totalOrders; i++) {
-      FreightOrder order = new FreightOrder();
-      order.setVoyage(savedVoyage);
-      order.setContainer(savedContainer);
-      order.setOrderedBy("user-" + i);
-      order.setNotes("order-" + i);
-      order.setStatus(OrderStatus.PENDING);
-      order.setCustomer(savedCustomer);
+      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+      request.setVoyageId(savedVoyage.getId());
+      request.setContainerId(savedContainer.getId());
+      request.setCustomerId(savedCustomer.getId());
+      request.setOrderedBy("user-" + i);
+      request.setNotes("order-" + i);
 
-      freightOrderRepository.save(order);
+      freightOrderService.createOrder(request);
     }
     mockMvc
         .perform(
@@ -161,15 +164,14 @@ class FreightOrderControllerTest {
     int totalOrders = 25;
 
     for (int i = 0; i < totalOrders; i++) {
-      FreightOrder order = new FreightOrder();
-      order.setVoyage(savedVoyage);
-      order.setContainer(savedContainer);
-      order.setOrderedBy("user-" + i);
-      order.setNotes("order-" + i);
-      order.setStatus(OrderStatus.PENDING);
-      order.setCustomer(savedCustomer);
+      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+      request.setVoyageId(savedVoyage.getId());
+      request.setContainerId(savedContainer.getId());
+      request.setCustomerId(savedCustomer.getId());
+      request.setOrderedBy("user-" + i);
+      request.setNotes("order-" + i);
 
-      freightOrderRepository.save(order);
+      freightOrderService.createOrder(request);
     }
     mockMvc
         .perform(get("/api/v1/freight-orders").param("page", "0"))
@@ -188,15 +190,14 @@ class FreightOrderControllerTest {
     int totalOrders = 25;
 
     for (int i = 0; i < totalOrders; i++) {
-      FreightOrder order = new FreightOrder();
-      order.setVoyage(savedVoyage);
-      order.setContainer(savedContainer);
-      order.setOrderedBy("user-" + i);
-      order.setNotes("order-" + i);
-      order.setStatus(OrderStatus.PENDING);
-      order.setCustomer(savedCustomer);
+      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+      request.setVoyageId(savedVoyage.getId());
+      request.setContainerId(savedContainer.getId());
+      request.setCustomerId(savedCustomer.getId());
+      request.setOrderedBy("user-" + i);
+      request.setNotes("order-" + i);
 
-      freightOrderRepository.save(order);
+      freightOrderService.createOrder(request);
     }
     mockMvc
         .perform(get("/api/v1/freight-orders"))
@@ -216,15 +217,14 @@ class FreightOrderControllerTest {
     int totalOrders = 25;
 
     for (int i = 0; i < totalOrders; i++) {
-      FreightOrder order = new FreightOrder();
-      order.setVoyage(savedVoyage);
-      order.setContainer(savedContainer);
-      order.setOrderedBy("user-" + i);
-      order.setNotes("order-" + i);
-      order.setStatus(OrderStatus.PENDING);
-      order.setCustomer(savedCustomer);
+      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+      request.setVoyageId(savedVoyage.getId());
+      request.setContainerId(savedContainer.getId());
+      request.setCustomerId(savedCustomer.getId());
+      request.setOrderedBy("user-" + i);
+      request.setNotes("order-" + i);
 
-      freightOrderRepository.save(order);
+      freightOrderService.createOrder(request);
     }
     mockMvc
         .perform(get("/api/v1/freight-orders").param("page", "0").param("size", "101"))

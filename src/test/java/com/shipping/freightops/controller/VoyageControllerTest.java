@@ -1,7 +1,7 @@
 package com.shipping.freightops.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -254,41 +254,44 @@ public class VoyageControllerTest {
     price2.setBasePriceUsd(BigDecimal.valueOf(1500));
     voyagePriceRepository.save(price2);
 
-    mockMvc.perform(get("/api/v1/voyages/{id}/prices", voyage.getId())
-                    .param("page", "0")
-                    .param("size", "20"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content").isArray())
-            .andExpect(jsonPath("$.content.length()").value(2))
-            .andExpect(jsonPath("$.content[0].voyageId").value(voyage.getId()))
-            .andExpect(jsonPath("$.content[0].basePriceUsd").value(1000))
-            .andExpect(jsonPath("$.content[1].basePriceUsd").value(1500))
-            .andExpect(jsonPath("$.page").value(0))
-            .andExpect(jsonPath("$.size").value(20))
-            .andExpect(jsonPath("$.totalElements").value(2))
-            .andExpect(jsonPath("$.totalPages").value(1));
+    mockMvc
+        .perform(
+            get("/api/v1/voyages/{id}/prices", voyage.getId())
+                .param("page", "0")
+                .param("size", "20"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content").isArray())
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[0].voyageId").value(voyage.getId()))
+        .andExpect(jsonPath("$.content[0].basePriceUsd").value(1000))
+        .andExpect(jsonPath("$.content[1].basePriceUsd").value(1500))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.totalPages").value(1));
   }
 
   @Test
   @DisplayName("GET /api/v1/voyages/{voyageId}/prices → 200 OK with empty content")
   void getVoyagePrices_returnsEmptyPage() throws Exception {
 
-    mockMvc.perform(get("/api/v1/voyages/{id}/prices", voyage.getId())
-                    .param("page", "0")
-                    .param("size", "20"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content").isArray())
-            .andExpect(jsonPath("$.content.length()").value(0))
-            .andExpect(jsonPath("$.totalElements").value(0));
+    mockMvc
+        .perform(
+            get("/api/v1/voyages/{id}/prices", voyage.getId())
+                .param("page", "0")
+                .param("size", "20"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content").isArray())
+        .andExpect(jsonPath("$.content.length()").value(0))
+        .andExpect(jsonPath("$.totalElements").value(0));
   }
 
   @Test
   @DisplayName("GET /api/v1/voyages/{voyageId}/prices → 404 Not Found if voyage does not exist")
   void getVoyagePrices_returnsNotFound() throws Exception {
 
-    mockMvc.perform(get("/api/v1/voyages/{id}/prices", 99999L)
-                    .param("page", "0")
-                    .param("size", "20"))
-            .andExpect(status().isNotFound());
+    mockMvc
+        .perform(get("/api/v1/voyages/{id}/prices", 99999L).param("page", "0").param("size", "20"))
+        .andExpect(status().isNotFound());
   }
 }
