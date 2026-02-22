@@ -273,6 +273,60 @@ Currently nothing stops the same container from being booked on overlapping voya
 
 ---
 
+## ENH-005 — Introduce Lombok to Reduce Boilerplate 🟢
+
+**Labels:** `good-first-issue`, `backend`, `enhancement`
+
+All entities and DTOs currently have hand-written getters, setters, and constructors. Add Lombok to
+eliminate this boilerplate.
+
+**Steps:**
+
+1. Add Lombok dependency to `pom.xml`:
+   ```xml
+   <dependency>
+     <groupId>org.projectlombok</groupId>
+     <artifactId>lombok</artifactId>
+     <optional>true</optional>
+   </dependency>
+   ```
+
+2. **Refactor entities** (`BaseEntity`, `Port`, `Vessel`, `Container`, `Voyage`, `FreightOrder`):
+   - Replace getters/setters with `@Getter` / `@Setter`
+   - Replace no-arg constructors with `@NoArgsConstructor`
+   - Replace all-arg constructors with `@AllArgsConstructor` where applicable
+   - Add `@Builder` on entities that have 3+ fields (optional, discuss in PR)
+   - Do **NOT** use `@Data` on entities — it generates `equals`/`hashCode` based on all fields which
+     breaks JPA proxies
+
+3. **Refactor DTOs** (`CreateFreightOrderRequest`, `FreightOrderResponse`):
+   - Use `@Getter` / `@Setter` on request DTOs
+   - Use `@Getter` on response DTOs (read-only)
+
+4. **Verify nothing breaks:**
+   - All existing tests must pass
+   - Application starts and endpoints respond correctly
+
+**IDE setup (important — add to README):**
+
+- **IntelliJ:** Install the Lombok plugin (bundled since 2020.3) → Enable annotation processing in
+  Settings → Build → Compiler → Annotation Processors
+- **VS Code:** Install "Lombok Annotations Support" extension
+
+**Do NOT refactor in the same PR as a feature issue** — this is a standalone cleanup to keep the
+diff reviewable.
+
+**Acceptance criteria:**
+
+- [ ] Lombok dependency added
+- [ ] All entities and DTOs refactored — no hand-written getters/setters remain
+- [ ] `@Data` is NOT used on any `@Entity` class
+- [ ] All existing tests pass with `mvn test`
+- [ ] README updated with IDE annotation processing setup note
+- [ ] Code is formatted
+
+---
+
 ## Dependency Graph
 
 ```
@@ -283,11 +337,13 @@ CRD-003 (Container)    ─┘
 ENH-001 (Pagination)        — independent
 ENH-002 (Swagger)            — independent
 ENH-004 (Double-Booking)     — independent
+ENH-005 (Lombok)             — independent, best done early
 ```
 
 ## Suggested Order
 
-1. **Start with** `CRD-001`, `CRD-002`, `CRD-003` — independent, pick any
+1. **Start with** `ENH-005`, `CRD-001`, `CRD-002`, `CRD-003` — independent, pick any. Doing
+   `ENH-005` first means less boilerplate for everyone else.
 2. **Then** `CRD-004` — needs ports and vessels to exist
 3. **In parallel** `ENH-001`, `ENH-002`, `ENH-004` — can be done anytime
 4. **Last** `ENH-003` — needs `CRD-004` done first
