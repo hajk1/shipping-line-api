@@ -11,6 +11,7 @@ versions are well-defined, later ones are directional.
 | 0.2.0   | CRUD Complete     | All entity controllers + dev experience | 🔧 In progress |
 | 0.3.0   | Money Talks       | Pricing, discounts, customers           | 📋 Planned     |
 | 0.4.0   | Paper Trail       | Invoicing, email, PDF generation        | 📋 Planned     |
+| 0.4.5   | Keep Me Posted    | Customer notifications & alerts         | 📋 Planned     |
 | 0.5.0   | Ship Shape        | Vessel planning, load control, cutoffs  | 📋 Planned     |
 | 0.6.0   | Track & Trace     | Barcodes, QR codes, tracking events     | 📋 Planned     |
 | 0.7.0   | Show Me the Money | Ownership, financials, commissions      | 📋 Planned     |
@@ -24,7 +25,6 @@ versions are well-defined, later ones are directional.
 The boilerplate that started it all.
 
 **Delivered:**
-
 - Spring Boot 3.4.x project with JPA, PostgreSQL, Docker Compose
 - Domain entities: Port, Vessel, Container, Voyage, FreightOrder
 - One fully working controller (`FreightOrderController`) as a reference
@@ -39,7 +39,6 @@ The boilerplate that started it all.
 All entities get their own controllers. Developer experience improvements.
 
 **Issues:**
-
 - `CRD-001` — Port CRUD controller
 - `CRD-002` — Vessel CRUD controller
 - `CRD-003` — Container CRUD controller
@@ -51,7 +50,6 @@ All entities get their own controllers. Developer experience improvements.
 - `ENH-005` — Introduce Lombok
 
 **Release criteria:**
-
 - [ ] All 5 entities have full CRUD
 - [ ] Swagger UI accessible
 - [ ] Pagination on all list endpoints
@@ -65,13 +63,11 @@ All entities get their own controllers. Developer experience improvements.
 Freight orders get real prices. Customers enter the picture.
 
 **Issues:**
-
 - `PRC-001` — Voyage pricing model
 - `PRC-002` — Discount support on freight orders
 - `CST-001` — Customer entity
 
 **Release criteria:**
-
 - [ ] Voyages have per-size pricing
 - [ ] Orders automatically priced from voyage
 - [ ] Discounts applicable at creation and later
@@ -84,15 +80,39 @@ Freight orders get real prices. Customers enter the picture.
 Generate and deliver professional documents.
 
 **Issues:**
-
 - `INV-001` — Invoice PDF generation
 - `INV-002` — Email invoice to customer
 
 **Release criteria:**
-
 - [ ] PDF invoices downloadable for delivered orders
 - [ ] Email delivery with PDF attachment
 - [ ] SMTP configurable for local dev (MailHog)
+
+---
+
+## 0.4.5 — Keep Me Posted
+
+Customers stay informed throughout the shipment lifecycle. Builds the notification engine and all
+lifecycle emails.
+
+**Issues:**
+
+- `NTF-001` — Notification template engine
+- `NTF-002` — Booking confirmation and cancellation notices
+- `NTF-003` — Departure notice
+- `NTF-004` — Arrival notice (advance, scheduled)
+- `NTF-005` — Delivery confirmation notice
+- `NTF-006` — Voyage delay alert
+
+**Release criteria:**
+
+- [ ] Reusable notification engine with DB-stored templates
+- [ ] Automatic emails on: booking confirmed, cancelled, departed, arriving soon, delivered
+- [ ] Delay alerts when voyage arrival time is pushed
+- [ ] Advance arrival notice via daily scheduler (configurable days-before)
+- [ ] Consolidated emails for multi-container customers
+- [ ] All notifications logged with sent/failed status
+- [ ] Email failures never block business operations
 
 ---
 
@@ -101,12 +121,10 @@ Generate and deliver professional documents.
 Operational control over vessel capacity and bookings.
 
 **Issues:**
-
 - `VPL-001` — Voyage load tracking and manual booking stop
 - `VPL-002` — Automatic booking cutoff based on capacity
 
 **Release criteria:**
-
 - [ ] TEU utilization visible per voyage
 - [ ] Manual booking open/close
 - [ ] Auto-cutoff at configurable threshold
@@ -119,7 +137,6 @@ Operational control over vessel capacity and bookings.
 Real-world tracking with barcodes and event logs.
 
 **Issues:**
-
 - `TRK-001` — Barcode and QR code generation service
 - `TRK-002` — Public tracking endpoint
 - `TRK-003` — Container label PDF with QR code
@@ -128,7 +145,6 @@ Real-world tracking with barcodes and event logs.
 - `TRK-006` — Gate pass PDF
 
 **Release criteria:**
-
 - [ ] Containers and orders trackable via public URL
 - [ ] QR codes on invoices, container labels, and gate passes
 - [ ] Event timeline shows full shipment history
@@ -141,7 +157,6 @@ Real-world tracking with barcodes and event logs.
 Financial transparency for vessel owners and agents.
 
 **Issues:**
-
 - `FIN-001` — Vessel ownership model
 - `FIN-002` — Voyage financial summary with owner profit split
 - `AGT-001` — Agent / freight forwarder entity
@@ -149,7 +164,6 @@ Financial transparency for vessel owners and agents.
 - `AGT-003` — Email commission report to agents
 
 **Release criteria:**
-
 - [ ] Multi-owner vessels with share percentages
 - [ ] Post-voyage financial breakdown per owner
 - [ ] Agents replace free-text `orderedBy`
@@ -162,7 +176,6 @@ Financial transparency for vessel owners and agents.
 AI-powered pricing intelligence — the differentiator.
 
 **Issues:**
-
 - `AIP-001` — AI service abstraction + LLM integration
 - `AIP-002` — Price suggestion from historical data
 - `AIP-003` — Market data integration (FBX/external rates)
@@ -170,7 +183,6 @@ AI-powered pricing intelligence — the differentiator.
 - `AIP-005` — Unified price intelligence endpoint
 
 **Release criteria:**
-
 - [ ] Provider-agnostic AI service (Claude, OpenAI, Ollama)
 - [ ] Price suggestions based on internal historical data
 - [ ] Market rate enrichment from external sources
@@ -184,21 +196,18 @@ AI-powered pricing intelligence — the differentiator.
 _Not yet broken into issues. This is the vision for what a production release would need._
 
 ### Authentication & Authorization
-
 - JWT-based auth or OAuth2/OIDC integration
 - Role-based access: ADMIN, OPS_MANAGER, OPS_AGENT, CUSTOMER (read-only)
 - API key support for external freight forwarders
 - Rate limiting per client
 
 ### Audit & Compliance
-
 - Full audit log on all mutations (who changed what, when)
 - Soft deletes instead of hard deletes
 - Data retention policies
 - GDPR-aware customer data handling
 
 ### Operational Hardening
-
 - Database migrations via Flyway (replace `ddl-auto=update`)
 - Connection pooling tuned for production (HikariCP settings)
 - Health checks and readiness probes (`/actuator/health`)
@@ -206,7 +215,6 @@ _Not yet broken into issues. This is the vision for what a production release wo
 - Correlation IDs across requests
 
 ### Deployment
-
 - Dockerfile for the application (multi-stage build)
 - Docker Compose with app + DB + MailHog for full local stack
 - CI/CD pipeline (GitHub Actions: build → test → format check → Docker image)
@@ -214,21 +222,18 @@ _Not yet broken into issues. This is the vision for what a production release wo
 - Kubernetes manifests or Helm chart (stretch)
 
 ### Monitoring & Observability
-
 - Micrometer metrics (order throughput, response times, AI call latency)
 - Prometheus + Grafana dashboards
 - Distributed tracing (OpenTelemetry)
 - Alerting on error rates and AI service failures
 
 ### Performance
-
 - Database indexes on frequently queried columns
 - Caching layer (Redis) for voyage prices and market data
 - Async processing for email sending and PDF generation
 - Bulk operations for high-volume order creation
 
 ### Future Product Ideas
-
 - Customer portal — external customers track their own shipments
 - Mobile scanning app — port workers scan QR codes to log events
 - Route optimization — AI suggests optimal vessel routing

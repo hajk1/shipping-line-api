@@ -16,6 +16,7 @@ All issues follow the pattern: `DOMAIN-NNN — Title`
 | `FIN`  | Finance & Ownership    |
 | `AGT`  | Agents & Commissions   |
 | `TRK`  | Tracking & Barcodes    |
+| `NTF`  | Notifications & Alerts |
 | `AIP`  | AI-Powered Pricing     |
 
 When referencing dependencies, use the full code (e.g. "Depends on `PRC-001`").
@@ -205,6 +206,335 @@ Add ability to email the invoice PDF to the customer.
 - [ ] Returns 409 for non-delivered orders
 - [ ] README updated with SMTP / MailHog setup instructions
 - [ ] Test with mocked `JavaMailSender` verifies email is triggered
+- [ ] Code is formatted
+
+---
+
+---
+
+## NTF-001 — Notification Template Engine 🟡
+
+**Labels:** `backend`, `infrastructure`, `notifications`
+**Depends on:** `INV-002` (reuses `EmailService`)
+
+Build a reusable notification engine that sends templated emails triggered by business events. This
+is the foundation for all customer-facing communications.
+
+**New entity: `NotificationTemplate`**
+
+- `id`, `createdAt`, `updatedAt` (from BaseEntity)
+- `code` (String, unique — e.g. `BOOKING_CONFIRMED`, `ARRIVAL_NOTICE`)
+- `subject` (String — supports placeholders like `{voyageNumber}`)
+- `body` (String, TEXT column — HTML email body with placeholders)
+- `active` (boolean, default true)
+
+**New entity: `NotificationLog`**
+
+- `id`, `createdAt`, `updatedAt` (from BaseEntity)
+- `templateCode` (String)
+- `freightOrderId` (FK to FreightOrder, nullable)
+- `recipientEmail` (String)
+- `subject` (String — rendered, not template)
+- `status` (enum: `SENT`, `FAILED`)
+- `errorMessage` (String, nullable)
+- `sentAt` (LocalDateTime)
+
+**What to create:**
+
+**`NotificationService`:**
+
+```java
+public void send(String templateCode, Long freightOrderId, Map<String, String> variables);
+```
+
+- Looks up template by code
+- Replaces placeholders in subject and body with provided variables
+- Sends email via `EmailService` (from `INV-002`)
+- Logs result to `NotificationLog`
+
+**Placeholder replacement:** Simple `{key}` → value string replacement. No need for a full template
+engine in the POC.
+
+**Common variables** (available to all templates):
+
+- `{customerName}`, `{customerEmail}`, `{companyName}`
+- `{containerCode}`, `{containerSize}`, `{containerType}`
+- `{voyageNumber}`, `{vesselName}`
+- `{departurePort}`, `{arrivalPort}`
+- `{departureTime}`, `{arrivalTime}`
+- `{orderStatus}`, `{orderId}`
+
+**New endpoints:**
+
+- `POST /api/v1/notifications/templates` — create a template
+- `GET /api/v1/notifications/templates` — list all templates
+- `PUT /api/v1/notifications/templates/{code}` — update a template
+- `GET /api/v1/notifications/log?orderId={id}` — view notification history for an order
+
+**Seed data** — insert default templates via `data.sql`:
+
+- `BOOKING_CONFIRMED`
+- `DEPARTURE_NOTICE`
+- `ARRIVAL_NOTICE`
+- `DELIVERY_CONFIRMATION`
+- `BOOKING_CANCELLED`
+- `VOYAGE_DELAYED`
+
+**Acceptance criteria:**
+
+- [ ] Templates stored in DB with placeholder support
+- [ ] `NotificationService.send()` renders and emails correctly
+- [ ] Sent/failed attempts logged in `NotificationLog`
+- [ ] Template CRUD endpoints work
+- [ ] Notification log queryable by order ID
+- [ ] Test with mocked `EmailService` verifies rendering and logging
+- [ ] Code is formatted
+
+---
+
+## NTF-002 — Booking Confirmation and Cancellation Notices 🟡
+
+**Labels:** `backend`, `business-logic`, `notifications`
+**Depends on:** `NTF-001`, `CST-001`
+
+Automatically email the customer when their freight order is confirmed or cancelled.
+
+**Trigger points — update `FreightOrderService`:**
+
+- When order status changes to `CONFIRMED` → send `BOOKING_CONFIRMED` template
+- When order status changes to `CANCELLED` → send `BOOKING_CANCELLED` template
+
+**Booking confirmation email content:**
+
+- Subject: `Booking Confirmed — {containerCode} on Voyage {voyageNumber}`
+- Body: customer greeting, container details, voyage details (vessel, route, departure/arrival
+  dates), order ID for reference, note to contact ops for changes
+
+**Cancellation email content:**
+
+- Subject: `Booking Cancelled — {containerCode} on Voyage {voyageNumber}`
+- Body: customer greeting, confirmation that booking has been cancelled, container and voyage
+  reference, note to contact ops to rebook
+
+**Business rules:**
+
+- Only send if the customer has a valid email address
+- If email fails, log the failure but do NOT roll back the status change
+- Do not send notifications for orders that skip directly to a terminal status (e.g. bulk imports)
+
+**Acceptance criteria:**
+
+- [ ] Confirmation email sent automatically on status → `CONFIRMED`
+- [ ] Cancellation email sent automatically on status → `CANCELLED`
+- [ ] Email failure does not block the status transition
+- [ ] Notifications logged in `NotificationLog`
+- [ ] Test verifies notification triggered on status change
+- [ ] Code is formatted
+
+---
+
+## NTF-003 — Departure Notice 🟡
+
+**Labels:** `backend`, `business-logic`, `notifications`
+**Depends on:** `NTF-001`, `CST-001`, `CRD-004`
+
+Notify customers when their cargo has departed.
+
+**Trigger point — update `VoyageService`:**
+
+- When voyage status changes to `IN_PROGRESS` → send `DEPARTURE_NOTICE` to ALL customers with active
+  orders on that voyage
+
+**Departure notice email content:**
+
+- Subject: `Departure Notice — Voyage {voyageNumber} from {departurePort}`
+- Body: customer greeting, confirmation that vessel has departed, vessel name, departure port and
+  time, estimated arrival port and time, container code and order reference, tracking link (if
+  `TRK-002` is done: `{baseUrl}/api/v1/track/order/{orderId}`)
+
+**What to create:**
+
+- `VoyageNotificationService` — queries all active freight orders for a voyage, sends departure
+  notice to each customer
+- Handles deduplication: if a customer has multiple containers on the same voyage, send ONE email
+  listing all their containers (not one per container)
+
+**Business rules:**
+
+- Only notify for orders with status `CONFIRMED` or `IN_TRANSIT`
+- Skip customers without email
+- Email failures logged per order but do not block voyage status change
+- Include tracking URL only if it's configured (`app.base-url` is set)
+
+**Acceptance criteria:**
+
+- [ ] All customers with active orders notified on voyage departure
+- [ ] Multi-container customers receive a single consolidated email
+- [ ] Email failure does not block voyage transition
+- [ ] Notifications logged per order
+- [ ] Test with 2+ customers on a voyage verifies correct emails sent
+- [ ] Code is formatted
+
+---
+
+## NTF-004 — Arrival Notice (Advance) 🟠
+
+**Labels:** `backend`, `business-logic`, `notifications`
+**Depends on:** `NTF-001`, `CST-001`, `CRD-004`
+
+Send an advance arrival notice to customers X days before the vessel's estimated arrival. This is
+the most operationally important notification — customers need it to arrange customs, trucking, and
+warehouse.
+
+**Configuration:**
+
+```properties
+app.notification.arrival-notice-days-before=3
+```
+
+**What to create:**
+
+**`ArrivalNoticeScheduler`** — a Spring `@Scheduled` job:
+
+- Runs daily (e.g. every day at 06:00 UTC)
+- Queries voyages where `status = IN_PROGRESS` and `arrivalTime` is within the configured days
+  window
+- For each matching voyage, sends `ARRIVAL_NOTICE` to all customers with active orders
+- Tracks which orders have already received an arrival notice (to avoid duplicates)
+
+**Update `FreightOrder` entity:**
+
+- Add `arrivalNoticeSent` (boolean, default `false`)
+
+**Arrival notice email content:**
+
+- Subject: `Arrival Notice — {containerCode} arriving at {arrivalPort}`
+- Body: customer greeting, estimated arrival date/time, vessel and voyage details, container
+  details, reminder to arrange customs clearance and transport, tracking link, ops contact info
+
+**Consolidated emails:** Same dedup logic as `NTF-003` — one email per customer per voyage listing
+all their containers.
+
+**New endpoint (manual trigger for ops):**
+
+- `POST /api/v1/voyages/{voyageId}/send-arrival-notice` — manually send arrival notices for a voyage
+  regardless of timing (useful if schedule changes)
+
+**Business rules:**
+
+- Automatic: only sent once per order (`arrivalNoticeSent` flag)
+- Manual trigger: always sends, resets `arrivalNoticeSent` flag (covers re-notification after
+  schedule change)
+- Only for `IN_PROGRESS` voyages
+- Scheduler should be resilient — if one email fails, continue with the rest
+
+**Acceptance criteria:**
+
+- [ ] Scheduler sends notices within configured window
+- [ ] Each order only auto-notified once
+- [ ] Manual trigger endpoint works for ops override
+- [ ] Consolidated emails for multi-container customers
+- [ ] Scheduler resilient to individual email failures
+- [ ] Test with mocked clock verifies scheduler timing logic
+- [ ] Code is formatted
+
+---
+
+## NTF-005 — Delivery Confirmation Notice 🟡
+
+**Labels:** `backend`, `business-logic`, `notifications`
+**Depends on:** `NTF-001`, `CST-001`
+
+Notify the customer when their freight order is marked as delivered.
+
+**Trigger point — update `FreightOrderService`:**
+
+- When order status changes to `DELIVERED` → send `DELIVERY_CONFIRMATION` template
+
+**Delivery confirmation email content:**
+
+- Subject: `Delivery Confirmation — {containerCode} from Voyage {voyageNumber}`
+- Body: customer greeting, confirmation of delivery, container and voyage details, final price
+  summary (if `PRC-001` is done: base price, discount, final price), note that invoice will follow (
+  or is attached if `INV-001` is done), thank you message
+
+**Optional integration with `INV-001`:**
+
+- If invoice generation is available, attach the invoice PDF to the delivery confirmation email
+- If not available, just send the text confirmation
+
+**Business rules:**
+
+- Only send on transition to `DELIVERED`
+- Email failure does not block status change
+- Logged in `NotificationLog`
+
+**Acceptance criteria:**
+
+- [ ] Delivery confirmation sent on status → `DELIVERED`
+- [ ] Invoice attached if `INV-001` is available (graceful if not)
+- [ ] Email failure does not block status transition
+- [ ] Test verifies notification triggered
+- [ ] Code is formatted
+
+---
+
+## NTF-006 — Voyage Delay Alert 🟠
+
+**Labels:** `backend`, `business-logic`, `notifications`
+**Depends on:** `NTF-001`, `CST-001`, `CRD-004`
+
+Notify customers when a voyage's arrival time is updated after departure, indicating a delay.
+
+**Trigger point — new `VoyageService` method:**
+
+- `updateArrivalTime(Long voyageId, LocalDateTime newArrivalTime, String reason)`
+- Only applicable for voyages with status `IN_PROGRESS`
+- If new arrival time is later than the original, trigger `VOYAGE_DELAYED` notification to all
+  affected customers
+
+**New endpoint:**
+
+- `PATCH /api/v1/voyages/{voyageId}/arrival-time`
+
+**Request body:**
+
+```json
+{
+  "newArrivalTime": "2025-04-18T14:00:00",
+  "reason": "Vessel rerouted via Cape of Good Hope due to security advisory"
+}
+```
+
+**Delay alert email content:**
+
+- Subject: `Schedule Update — Voyage {voyageNumber} to {arrivalPort}`
+- Body: customer greeting, acknowledgment of delay, original arrival time vs new arrival time, delay
+  reason, updated container and voyage details, apology and ops contact info
+
+**Consolidated emails:** One email per customer per voyage.
+
+**Update `Voyage` entity:**
+
+- Add `originalArrivalTime` (LocalDateTime, nullable) — set on first delay, preserves the original
+  ETA
+
+**Business rules:**
+
+- Only send if new arrival is LATER than current (early arrival doesn't need an alert)
+- Only for `IN_PROGRESS` voyages (return 409 otherwise)
+- If arrival is updated multiple times, each update triggers a new notification (with updated times)
+- Reset `arrivalNoticeSent` flag from `NTF-004` so a new arrival notice is sent at the correct time
+
+**Acceptance criteria:**
+
+- [ ] Delay alert sent when arrival time pushed later
+- [ ] No alert when arrival time moved earlier
+- [ ] Returns 409 for non-in-progress voyages
+- [ ] `originalArrivalTime` preserved from first update
+- [ ] `arrivalNoticeSent` reset to allow re-notification
+- [ ] Consolidated emails for multi-container customers
+- [ ] Test covers delay scenario and early-arrival no-op
 - [ ] Code is formatted
 
 ---
@@ -459,8 +789,8 @@ After a voyage is `COMPLETED`, calculate each agent's commission from the orders
 
 **Business rules:**
 
-- Commission = `agent.commissionPercent` × sum of `finalPriceUsd` for that agent's `DELIVERED`orders
-  on the voyage
+- Commission = `agent.commissionPercent` × sum of `finalPriceUsd` for that agent's `DELIVERED`
+  orders on the voyage
 - Only `DELIVERED` orders count
 - Only `COMPLETED` voyages (return 409 otherwise)
 
@@ -870,23 +1200,19 @@ without leaking provider details into business logic.
 **What to create:**
 
 **Interface: `AiClient`**
-
 ```java
 public interface AiClient {
-
   String complete(String systemPrompt, String userPrompt);
 }
 ```
 
 **Implementations (pick one as default, wire via Spring profile):**
-
 - `ClaudeAiClient` — calls Anthropic Messages API
 - `OpenAiClient` — calls OpenAI Chat Completions API
 
 Use `RestClient` (Spring 6.1+) for HTTP calls. No SDK dependencies — keep it lean.
 
 **Configuration:**
-
 ```properties
 # application.properties
 app.ai.provider=claude            # or "openai" or "ollama"
@@ -903,19 +1229,16 @@ app.ai.base-url=https://api.anthropic.com
 - Create an `AiConfig` class that reads properties and builds the active client bean
 
 **New endpoint (for smoke testing):**
-
 - `POST /api/v1/ai/test` — accepts `{ "prompt": "..." }`, returns raw LLM response
 - This endpoint should be disabled in production via a property flag
 
 **Hints:**
-
 - Don't add SDKs — just raw HTTP with `RestClient`
 - Always set a timeout (30s suggested)
 - Log token usage if the provider returns it
 - Add a `NoOpAiClient` implementation that returns a canned response — useful for tests
 
 **Acceptance criteria:**
-
 - [ ] `AiClient` interface defined
 - [ ] At least one real provider implemented (Claude or OpenAI)
 - [ ] `NoOpAiClient` available for tests
@@ -936,7 +1259,6 @@ When setting a voyage price, the system should suggest a price range based on hi
 data from past voyages on the same or similar routes.
 
 **New endpoint:**
-
 - `GET /api/v1/voyages/{voyageId}/price-suggestion?containerSize=TWENTY_FOOT`
 
 **How it works:**
@@ -954,7 +1276,6 @@ data from past voyages on the same or similar routes.
 - `PriceSuggestionResponse` DTO
 
 **Response:**
-
 ```json
 {
   "voyageNumber": "VOY-2025-010",
@@ -972,7 +1293,6 @@ data from past voyages on the same or similar routes.
 ```
 
 **Prompt engineering hints:**
-
 - Include structured data in the prompt (route, dates, prices as a table)
 - Ask for JSON output with specific fields
 - Include instructions: "If fewer than 3 data points, set confidence to LOW and note insufficient
@@ -980,7 +1300,6 @@ data from past voyages on the same or similar routes.
 - Ask the LLM to explain its reasoning in 2–3 sentences
 
 **Confidence levels:**
-
 - `HIGH` — 10+ data points, consistent pricing, same route
 - `MEDIUM` — 3–9 data points or similar (not identical) routes used
 - `LOW` — fewer than 3 data points or no matching routes
@@ -992,7 +1311,6 @@ data from past voyages on the same or similar routes.
 - Route has data but only for the other container size → note this in reasoning
 
 **Acceptance criteria:**
-
 - [ ] Endpoint returns a structured price suggestion
 - [ ] Historical data gathered correctly from past voyages
 - [ ] Confidence level reflects data quality
@@ -1013,19 +1331,15 @@ pricing against the broader market.
 **What to create:**
 
 **Interface: `MarketDataProvider`**
-
 ```java
 public interface MarketDataProvider {
-
   Optional<MarketRate> getCurrentRate(String originPort, String destPort, ContainerSize size);
 }
 ```
 
 **`MarketRate` DTO:**
-
 ```java
 public class MarketRate {
-
   private BigDecimal spotRateUsd;
   private String source;          // e.g. "Freightos Baltic Index"
   private LocalDate asOfDate;
@@ -1034,19 +1348,16 @@ public class MarketRate {
 ```
 
 **Implementations:**
-
 - `FreightosMarketDataProvider` — calls Freightos FBX API (free tier available)
 - `StaticMarketDataProvider` — returns hardcoded sample rates for demo/testing
 
 **Configuration:**
-
 ```properties
 app.market-data.provider=static   # or "freightos"
 app.market-data.api-key=${MARKET_DATA_API_KEY}
 ```
 
 **Update `PriceSuggestionService` (from `AIP-002`):**
-
 - Before calling the LLM, fetch current market rate
 - Include it in the prompt: "The current market spot rate for this route is $X/TEU as of [date]"
 - Update the response DTO:
@@ -1068,7 +1379,6 @@ app.market-data.api-key=${MARKET_DATA_API_KEY}
 ```
 
 **Acceptance criteria:**
-
 - [ ] Market data provider abstraction defined
 - [ ] At least `StaticMarketDataProvider` implemented
 - [ ] Market rate included in LLM prompt and response
@@ -1089,19 +1399,15 @@ suggestion. The LLM synthesizes news headlines into risk factors that may affect
 **What to create:**
 
 **Interface: `NewsProvider`**
-
 ```java
 public interface NewsProvider {
-
   List<NewsItem> getRecentHeadlines(String route, int maxResults);
 }
 ```
 
 **`NewsItem` DTO:**
-
 ```java
 public class NewsItem {
-
   private String headline;
   private String source;
   private LocalDate publishedDate;
@@ -1110,19 +1416,16 @@ public class NewsItem {
 ```
 
 **Implementations:**
-
 - `RssNewsProvider` — fetches from public RSS feeds (e.g. Lloyd's List, The Loadstar, gCaptain)
 - `StaticNewsProvider` — returns sample headlines for demo/testing
 
 **Configuration:**
-
 ```properties
 app.news.provider=static   # or "rss"
 app.news.feeds=https://gcaptain.com/feed/,https://theloadstar.com/feed/
 ```
 
 **Update `PriceSuggestionService`:**
-
 - Fetch recent headlines relevant to the route (keyword matching on port names, regions)
 - Include top 5 headlines in the LLM prompt
 - Ask the LLM to identify risk factors and their potential impact on pricing
@@ -1153,7 +1456,6 @@ app.news.feeds=https://gcaptain.com/feed/,https://theloadstar.com/feed/
 as "risk factors to consider" not "price will go up 15%."
 
 **Acceptance criteria:**
-
 - [ ] News provider abstraction defined
 - [ ] At least `StaticNewsProvider` implemented
 - [ ] Risk factors included in suggestion response
@@ -1173,18 +1475,15 @@ Combine all available intelligence into a single endpoint that assembles whateve
 available and produces the richest possible suggestion.
 
 **Update endpoint:**
-
 - `GET /api/v1/voyages/{voyageId}/price-intelligence?containerSize=TWENTY_FOOT`
 
 This replaces / wraps the endpoint from `AIP-002`. It gracefully degrades:
-
 - If only historical data is available → Tier 1 suggestion
 - If market data is configured → Tier 2 enriched suggestion
 - If news feeds are configured → Tier 3 with risk factors
 - Response always indicates which data sources were used
 
 **Full response:**
-
 ```json
 {
   "voyageNumber": "VOY-2025-010",
@@ -1208,17 +1507,9 @@ This replaces / wraps the endpoint from `AIP-002`. It gracefully degrades:
     "asOfDate": "2025-03-28"
   },
   "riskFactors": [
-    {
-      "factor": "...",
-      "impact": "HIGH",
-      "description": "..."
-    }
+    { "factor": "...", "impact": "HIGH", "description": "..." }
   ],
-  "dataSources": [
-    "historical",
-    "market",
-    "news"
-  ],
+  "dataSources": ["historical", "market", "news"],
   "generatedAt": "2025-03-28T14:30:00"
 }
 ```
@@ -1239,7 +1530,6 @@ This replaces / wraps the endpoint from `AIP-002`. It gracefully degrades:
 - If `AiClient` itself fails, return 503 with a message
 
 **Acceptance criteria:**
-
 - [ ] Endpoint assembles all available data sources
 - [ ] Gracefully degrades when sources are unavailable
 - [ ] `dataSources` accurately reflects what was used
@@ -1266,8 +1556,16 @@ CST-001 (Customer Entity)
 
 INV-001 (Invoice PDF)
   ├──→ INV-002 (Email Invoice)
-  │    └──→ AGT-003 (Email Commission)
+  │    ├──→ AGT-003 (Email Commission)
+  │    └──→ NTF-001 (Notification Engine)
   └──→ TRK-004 (QR on Invoice)
+
+NTF-001 (Notification Engine)
+  ├──→ NTF-002 (Booking Confirm/Cancel)
+  ├──→ NTF-003 (Departure Notice)
+  ├──→ NTF-004 (Arrival Notice)
+  ├──→ NTF-005 (Delivery Confirmation)
+  └──→ NTF-006 (Voyage Delay Alert)
 
 VPL-001 (Load Tracking)
   └──→ VPL-002 (Auto Cutoff)
@@ -1309,9 +1607,12 @@ AIP-001 (AI Service)
 | D     | `AGT-001` → `AGT-002` → `AGT-003`             | `PRC-001` + `AGT-001` complete               |
 | E     | `TRK-001` → `TRK-002` → `TRK-005` → `TRK-006` | `TRK-001` anytime; `TRK-006` needs `CST-001` |
 | F     | `AIP-001` → `AIP-002` → `AIP-005`             | `AIP-001` anytime; `AIP-002` needs `PRC-001` |
+| G     | `NTF-001` → `NTF-002` → `NTF-003` → `NTF-004` | `NTF-001` needs `INV-002` + `CST-001`        |
 | —     | `CST-001`                                     | Anytime                                      |
 | —     | `TRK-003`, `TRK-004`                          | After their dependencies                     |
 | —     | `AIP-003`, `AIP-004`                          | After `AIP-002`, independent of each other   |
+| —     | `NTF-005`                                     | After `NTF-001`, pairs well with `INV-001`   |
+| —     | `NTF-006`                                     | After `NTF-001` + `CRD-004`                  |
 
-Tracks A, B, E, and F can all run in parallel. `AIP-003` and `AIP-004` are independent enrichment
-modules — assign them to whoever finishes early.
+Tracks A, B, E, and F can all run in parallel. Track G starts once Track A delivers `INV-002`.
+`NTF-005` and `NTF-006` are standalone pickups once `NTF-001` is done.

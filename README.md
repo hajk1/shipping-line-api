@@ -200,8 +200,8 @@ Ready to pick up a task? See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, br
 guidelines.
 
 - **Phase 1** — Core CRUD and foundations: [ISSUES.md](ISSUES.md)
-- **Phase 2** — Pricing, invoicing, vessel planning, finance, commissions, and barcode
-  tracking: [ISSUES-PHASE2.md](ISSUES-PHASE2.md)
+- **Phase 2** — Pricing, invoicing, notifications, vessel planning, finance, commissions, barcode
+  tracking, and AI pricing: [ISSUES-PHASE2.md](ISSUES-PHASE2.md)
 
 All issues use a domain-prefixed naming convention (e.g. `PRC-001`, `VPL-002`) so dependencies are
 easy to follow. See the naming table at the top of each issues file.
