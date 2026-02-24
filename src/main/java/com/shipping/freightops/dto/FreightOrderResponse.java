@@ -11,6 +11,8 @@ public class FreightOrderResponse {
   private Long id;
   private String voyageNumber;
   private String containerCode;
+  private Long agentId;
+  private String agentName;
   private String customerName;
   private String customerEmail;
   private String orderedBy;
@@ -28,6 +30,8 @@ public class FreightOrderResponse {
     dto.id = order.getId();
     dto.voyageNumber = order.getVoyage().getVoyageNumber();
     dto.containerCode = order.getContainer().getContainerCode();
+    dto.agentId = order.getAgent().getId();
+    dto.agentName = order.getAgent().getName();
     dto.customerName = order.getCustomer().getCompanyName();
     dto.customerEmail = order.getCustomer().getEmail();
     dto.orderedBy = order.getOrderedBy();
@@ -53,6 +57,13 @@ public class FreightOrderResponse {
     return containerCode;
   }
 
+  public Long getAgentId() {
+    return agentId;
+  }
+
+  public String getAgentName() {
+    return agentName;
+  }
   public String getCustomerName() {
     return customerName;
   }
@@ -93,3 +104,4 @@ public class FreightOrderResponse {
     return discountReason;
   }
 }
+
