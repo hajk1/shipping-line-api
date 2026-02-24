@@ -10,5 +10,5 @@ public interface VoyageRepository extends JpaRepository<Voyage, Long> {
 
   Optional<Voyage> findByVoyageNumber(String voyageNumber);
 
-  List<Voyage> findByStatus(VoyageStatus status);
+  List<Voyage> findAllByStatus(VoyageStatus status);
 }

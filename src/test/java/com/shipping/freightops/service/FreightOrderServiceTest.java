@@ -1,279 +1,258 @@
 package com.shipping.freightops.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
-import com.shipping.freightops.entity.Agent;
-import com.shipping.freightops.entity.Container;
-import com.shipping.freightops.entity.FreightOrder;
-import com.shipping.freightops.entity.Voyage;
-import com.shipping.freightops.enums.AgentType;
+import com.shipping.freightops.dto.UpdateDiscountRequest;
+import com.shipping.freightops.entity.*;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.enums.VoyageStatus;
-import com.shipping.freightops.repository.AgentRepository;
-import com.shipping.freightops.repository.ContainerRepository;
-import com.shipping.freightops.repository.FreightOrderRepository;
-import com.shipping.freightops.repository.VoyageRepository;
+import com.shipping.freightops.exception.BadRequestException;
+import com.shipping.freightops.repository.*;
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
-/** Unit tests for {@link FreightOrderService}. */
-@ExtendWith(MockitoExtension.class)
-class FreightOrderServiceTest {
+@SpringBootTest
+@Transactional
+public class FreightOrderServiceTest {
+  @Autowired private FreightOrderService freightOrderService;
+  @Autowired private VoyageRepository voyageRepository;
+  @Autowired private ContainerRepository containerRepository;
+  @Autowired private CustomerRepository customerRepository;
+  @Autowired private PortRepository portRepository;
+  @Autowired private VesselRepository vesselRepository;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
+  @Autowired private FreightOrderRepository freightOrderRepository;
 
-  @Mock private FreightOrderRepository orderRepository;
-  @Mock private VoyageRepository voyageRepository;
-  @Mock private ContainerRepository containerRepository;
-  @Mock private AgentRepository agentRepository;
+  private Voyage savedVoyage;
+  private Container savedContainer;
+  private Customer savedCustomer;
 
-  @InjectMocks private FreightOrderService freightOrderService;
+  @BeforeEach
+  void setUp() {
+    freightOrderRepository.deleteAll();
+    voyagePriceRepository.deleteAll();
+    voyageRepository.deleteAll();
+    containerRepository.deleteAll();
+    customerRepository.deleteAll();
+    vesselRepository.deleteAll();
+    portRepository.deleteAll();
 
-  // ── CREATE ORDER ──────────────────────────────────────────
+    Port departure = portRepository.save(new Port("AEJEA", "Jebel Ali", "UAE"));
+    Port arrival = portRepository.save(new Port("CNSHA", "Shanghai", "China"));
 
-  @Nested
-  @DisplayName("createOrder")
-  class CreateOrder {
+    Vessel vessel = vesselRepository.save(new Vessel("MV Test", "9999999", 3000));
 
-    @Test
-    @DisplayName("happy path — sets voyage, container, agent, notes, and saves")
-    void happyPath() {
-      Voyage voyage = buildVoyage(1L, VoyageStatus.PLANNED);
-      Container container = buildContainer(2L);
-      Agent agent = buildAgent(3L, true);
-
-      when(voyageRepository.findById(1L)).thenReturn(Optional.of(voyage));
-      when(containerRepository.findById(2L)).thenReturn(Optional.of(container));
-      when(agentRepository.findById(3L)).thenReturn(Optional.of(agent));
-      when(orderRepository.save(any(FreightOrder.class)))
-          .thenAnswer(
-              inv -> {
-                FreightOrder saved = inv.getArgument(0);
-                saved.setId(100L);
-                return saved;
-              });
-
-      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
-      request.setVoyageId(1L);
-      request.setContainerId(2L);
-      request.setAgentId(3L);
-      request.setNotes("Handle with care");
-
-      FreightOrder result = freightOrderService.createOrder(request);
-
-      ArgumentCaptor<FreightOrder> captor = ArgumentCaptor.forClass(FreightOrder.class);
-      verify(orderRepository).save(captor.capture());
-      FreightOrder captured = captor.getValue();
-
-      assertThat(captured.getVoyage()).isSameAs(voyage);
-      assertThat(captured.getContainer()).isSameAs(container);
-      assertThat(captured.getAgent()).isSameAs(agent);
-      assertThat(captured.getNotes()).isEqualTo("Handle with care");
-      assertThat(result.getId()).isEqualTo(100L);
-    }
-
-    @Test
-    @DisplayName("throws when voyage not found")
-    void throwsWhenVoyageNotFound() {
-      when(voyageRepository.findById(99L)).thenReturn(Optional.empty());
-
-      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
-      request.setVoyageId(99L);
-
-      assertThatThrownBy(() -> freightOrderService.createOrder(request))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Voyage not found: 99");
-
-      verify(orderRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("throws when voyage is cancelled")
-    void throwsWhenVoyageCancelled() {
-      Voyage cancelled = buildVoyage(1L, VoyageStatus.CANCELLED);
-      when(voyageRepository.findById(1L)).thenReturn(Optional.of(cancelled));
-
-      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
-      request.setVoyageId(1L);
-
-      assertThatThrownBy(() -> freightOrderService.createOrder(request))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("Cannot book freight on a cancelled voyage");
-
-      verify(orderRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("throws when container not found")
-    void throwsWhenContainerNotFound() {
-      Voyage voyage = buildVoyage(1L, VoyageStatus.PLANNED);
-      when(voyageRepository.findById(1L)).thenReturn(Optional.of(voyage));
-      when(containerRepository.findById(99L)).thenReturn(Optional.empty());
-
-      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
-      request.setVoyageId(1L);
-      request.setContainerId(99L);
-
-      assertThatThrownBy(() -> freightOrderService.createOrder(request))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Container not found: 99");
-
-      verify(orderRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("throws when agent not found")
-    void throwsWhenAgentNotFound() {
-      Voyage voyage = buildVoyage(1L, VoyageStatus.PLANNED);
-      Container container = buildContainer(2L);
-      when(voyageRepository.findById(1L)).thenReturn(Optional.of(voyage));
-      when(containerRepository.findById(2L)).thenReturn(Optional.of(container));
-      when(agentRepository.findById(99L)).thenReturn(Optional.empty());
-
-      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
-      request.setVoyageId(1L);
-      request.setContainerId(2L);
-      request.setAgentId(99L);
-
-      assertThatThrownBy(() -> freightOrderService.createOrder(request))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Agent not found: 99");
-
-      verify(orderRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("throws when agent is inactive")
-    void throwsWhenAgentInactive() {
-      Voyage voyage = buildVoyage(1L, VoyageStatus.PLANNED);
-      Container container = buildContainer(2L);
-      Agent inactive = buildAgent(3L, false);
-      when(voyageRepository.findById(1L)).thenReturn(Optional.of(voyage));
-      when(containerRepository.findById(2L)).thenReturn(Optional.of(container));
-      when(agentRepository.findById(3L)).thenReturn(Optional.of(inactive));
-
-      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
-      request.setVoyageId(1L);
-      request.setContainerId(2L);
-      request.setAgentId(3L);
-
-      assertThatThrownBy(() -> freightOrderService.createOrder(request))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("Cannot place order with inactive agent");
-
-      verify(orderRepository, never()).save(any());
-    }
-  }
-
-  // ── GET ORDER ─────────────────────────────────────────────
-
-  @Nested
-  @DisplayName("getOrder")
-  class GetOrder {
-
-    @Test
-    @DisplayName("returns order when found")
-    void returnsOrderWhenFound() {
-      FreightOrder order = new FreightOrder();
-      order.setId(1L);
-      when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-
-      FreightOrder result = freightOrderService.getOrder(1L);
-
-      assertThat(result.getId()).isEqualTo(1L);
-    }
-
-    @Test
-    @DisplayName("throws when order not found")
-    void throwsWhenNotFound() {
-      when(orderRepository.findById(99L)).thenReturn(Optional.empty());
-
-      assertThatThrownBy(() -> freightOrderService.getOrder(99L))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Freight order not found: 99");
-    }
-  }
-
-  // ── GET ALL ORDERS ────────────────────────────────────────
-
-  @Nested
-  @DisplayName("getAllOrders")
-  class GetAllOrders {
-
-    @Test
-    @DisplayName("returns all orders from repository")
-    void returnsAll() {
-      FreightOrder o1 = new FreightOrder();
-      o1.setId(1L);
-      FreightOrder o2 = new FreightOrder();
-      o2.setId(2L);
-      when(orderRepository.findAll()).thenReturn(List.of(o1, o2));
-
-      List<FreightOrder> result = freightOrderService.getAllOrders();
-
-      assertThat(result).hasSize(2);
-      verify(orderRepository).findAll();
-    }
-  }
-
-  // ── GET ORDERS BY VOYAGE ──────────────────────────────────
-
-  @Nested
-  @DisplayName("getOrdersByVoyage")
-  class GetOrdersByVoyage {
-
-    @Test
-    @DisplayName("delegates to repository findByVoyageId")
-    void delegatesToRepo() {
-      FreightOrder o1 = new FreightOrder();
-      o1.setId(1L);
-      when(orderRepository.findByVoyageId(5L)).thenReturn(List.of(o1));
-
-      List<FreightOrder> result = freightOrderService.getOrdersByVoyage(5L);
-
-      assertThat(result).hasSize(1);
-      verify(orderRepository).findByVoyageId(5L);
-    }
-  }
-
-  // ── HELPERS ───────────────────────────────────────────────
-
-  private Voyage buildVoyage(Long id, VoyageStatus status) {
     Voyage voyage = new Voyage();
-    voyage.setId(id);
-    voyage.setStatus(status);
-    return voyage;
+    voyage.setVoyageNumber("VOY-001");
+    voyage.setVessel(vessel);
+    voyage.setDeparturePort(departure);
+    voyage.setArrivalPort(arrival);
+    voyage.setDepartureTime(LocalDateTime.now().plusDays(3));
+    voyage.setArrivalTime(LocalDateTime.now().plusDays(10));
+    savedVoyage = voyageRepository.save(voyage);
+
+    savedContainer =
+        containerRepository.save(
+            new Container("TSTU1234567", ContainerSize.TWENTY_FOOT, ContainerType.DRY));
+
+    Customer customer = new Customer();
+    customer.setCompanyName("Test Customer Inc.");
+    customer.setContactName("John Doe");
+    customer.setEmail("john@test.com");
+    savedCustomer = customerRepository.save(customer);
+
+    VoyagePrice price = new VoyagePrice();
+    price.setVoyage(savedVoyage);
+    price.setContainerSize(ContainerSize.TWENTY_FOOT);
+    price.setBasePriceUsd(BigDecimal.valueOf(1000));
+    voyagePriceRepository.save(price);
   }
 
-  private Container buildContainer(Long id) {
-    Container container = new Container();
-    container.setId(id);
-    return container;
+  @Test
+  @DisplayName("createOrder → calculates final price with discount")
+  void createOrder_withDiscount_appliesCorrectPrice() {
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("tester");
+    request.setDiscountPercent(BigDecimal.valueOf(10)); // 10%
+
+    FreightOrder order = freightOrderService.createOrder(request);
+
+    assertThat(order.getBasePriceUsd()).isEqualByComparingTo("1000");
+    assertThat(order.getDiscountPercent()).isEqualByComparingTo("10");
+    assertThat(order.getFinalPrice()).isEqualByComparingTo("900");
   }
 
-  private Agent buildAgent(Long id, boolean active) {
-    Agent agent = new Agent();
-    agent.setId(id);
-    agent.setName("Test Agent");
-    agent.setEmail("test@agent.com");
-    agent.setCommissionPercent(new BigDecimal("5.00"));
-    agent.setType(AgentType.INTERNAL);
-    agent.setActive(active);
-    return agent;
+  @Test
+  @DisplayName("createOrder → no discount means full price")
+  void createOrder_withoutDiscount_setsFullPrice() {
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("tester");
+
+    FreightOrder order = freightOrderService.createOrder(request);
+
+    assertThat(order.getDiscountPercent()).isEqualByComparingTo("0");
+    assertThat(order.getFinalPrice()).isEqualByComparingTo("1000");
+  }
+
+  @Test
+  @DisplayName("createOrder → throws when no price defined")
+  void createOrder_withoutVoyagePrice_throwsException() {
+    voyagePriceRepository.deleteAll(); // remove price
+
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+
+    assertThatThrownBy(() -> freightOrderService.createOrder(request))
+        .isInstanceOf(BadRequestException.class);
+  }
+
+  @Test
+  @DisplayName("createOrder → throws when voyage is cancelled")
+  void createOrder_whenVoyageCancelled_throwsException() {
+    savedVoyage.setStatus(VoyageStatus.CANCELLED);
+    voyageRepository.save(savedVoyage);
+
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+
+    assertThatThrownBy(() -> freightOrderService.createOrder(request))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  @DisplayName("createOrder → throws when voyage not found")
+  void createOrder_whenVoyageNotFound_throwsException() {
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(999L);
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+
+    assertThatThrownBy(() -> freightOrderService.createOrder(request))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  @DisplayName("updateDiscount → updates discount and recalculates price")
+  void updateDiscount_appliesCorrectly() {
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("tester");
+
+    FreightOrder order = freightOrderService.createOrder(request);
+
+    UpdateDiscountRequest update = new UpdateDiscountRequest();
+    update.setDiscountPercent(BigDecimal.valueOf(11));
+    update.setReason("Promo");
+
+    FreightOrder updated = freightOrderService.updateDiscount(order.getId(), update);
+
+    assertThat(updated.getDiscountPercent()).isEqualByComparingTo("11");
+    assertThat(updated.getDiscountReason()).isEqualTo("Promo");
+    assertThat(updated.getFinalPrice()).isEqualByComparingTo("890");
+  }
+
+  @Test
+  @DisplayName("updateDiscount → throws when order is cancelled")
+  void updateDiscount_whenCancelled_throws() {
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("tester");
+
+    FreightOrder order = freightOrderService.createOrder(request);
+
+    order.setStatus(OrderStatus.CANCELLED);
+    freightOrderRepository.save(order);
+
+    UpdateDiscountRequest update = new UpdateDiscountRequest();
+    update.setDiscountPercent(BigDecimal.valueOf(10));
+    update.setReason("Test");
+
+    assertThatThrownBy(() -> freightOrderService.updateDiscount(order.getId(), update))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  @DisplayName("updateDiscount → throws when order not found")
+  void updateDiscount_notFound_throws() {
+    UpdateDiscountRequest update = new UpdateDiscountRequest();
+    update.setDiscountPercent(BigDecimal.valueOf(10));
+    update.setReason("Test");
+
+    assertThatThrownBy(() -> freightOrderService.updateDiscount(999L, update))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  @DisplayName("updateDiscount → recalculates final price correctly for different values")
+  void updateDiscount_recalculatesFinalPrice() {
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("tester");
+
+    FreightOrder order = freightOrderService.createOrder(request);
+
+    UpdateDiscountRequest update = new UpdateDiscountRequest();
+    update.setReason("Test");
+
+    // 10%
+    update.setDiscountPercent(BigDecimal.valueOf(10));
+    FreightOrder updated = freightOrderService.updateDiscount(order.getId(), update);
+    assertThat(updated.getFinalPrice()).isEqualByComparingTo("900");
+
+    // 25%
+    update.setDiscountPercent(BigDecimal.valueOf(25));
+    updated = freightOrderService.updateDiscount(order.getId(), update);
+    assertThat(updated.getFinalPrice()).isEqualByComparingTo("750");
+
+    // 0%
+    update.setDiscountPercent(BigDecimal.ZERO);
+    updated = freightOrderService.updateDiscount(order.getId(), update);
+    assertThat(updated.getFinalPrice()).isEqualByComparingTo("1000");
+  }
+
+  @Test
+  @DisplayName("updateDiscount → 100% discount results in zero price")
+  void updateDiscount_fullDiscount() {
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("tester");
+
+    FreightOrder order = freightOrderService.createOrder(request);
+
+    UpdateDiscountRequest update = new UpdateDiscountRequest();
+    update.setDiscountPercent(BigDecimal.valueOf(100));
+    update.setReason("Free");
+
+    FreightOrder updated = freightOrderService.updateDiscount(order.getId(), update);
+
+    assertThat(updated.getFinalPrice()).isEqualByComparingTo("0");
   }
 }

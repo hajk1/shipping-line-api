@@ -1,26 +1,18 @@
 package com.shipping.freightops.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
-import com.shipping.freightops.entity.Agent;
-import com.shipping.freightops.entity.Container;
-import com.shipping.freightops.entity.Port;
-import com.shipping.freightops.entity.Vessel;
-import com.shipping.freightops.entity.Voyage;
-import com.shipping.freightops.enums.AgentType;
+import com.shipping.freightops.dto.UpdateDiscountRequest;
+import com.shipping.freightops.entity.*;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
-import com.shipping.freightops.repository.AgentRepository;
-import com.shipping.freightops.repository.ContainerRepository;
-import com.shipping.freightops.repository.FreightOrderRepository;
-import com.shipping.freightops.repository.PortRepository;
-import com.shipping.freightops.repository.VesselRepository;
-import com.shipping.freightops.repository.VoyageRepository;
+import com.shipping.freightops.enums.OrderStatus;
+import com.shipping.freightops.repository.*;
+import com.shipping.freightops.service.FreightOrderService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration test for {@link FreightOrderController}.
@@ -40,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 class FreightOrderControllerTest {
 
   @Autowired private MockMvc mockMvc;
@@ -47,24 +41,26 @@ class FreightOrderControllerTest {
   @Autowired private PortRepository portRepository;
   @Autowired private VesselRepository vesselRepository;
   @Autowired private ContainerRepository containerRepository;
+  @Autowired private CustomerRepository customerRepository;
   @Autowired private VoyageRepository voyageRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
-  @Autowired private AgentRepository agentRepository;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
+  @Autowired private FreightOrderService freightOrderService;
 
   private Voyage savedVoyage;
   private Container savedContainer;
-  private Agent savedAgent;
+  private Customer savedCustomer;
 
   @BeforeEach
   void setUp() {
     // Clear state between tests — children first to respect FK constraints
     freightOrderRepository.deleteAll();
+    voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     containerRepository.deleteAll();
+    customerRepository.deleteAll();
     vesselRepository.deleteAll();
     portRepository.deleteAll();
-    agentRepository.deleteAll();
-
     Port departure = portRepository.save(new Port("AEJEA", "Jebel Ali", "UAE"));
     Port arrival = portRepository.save(new Port("CNSHA", "Shanghai", "China"));
     Vessel vessel = vesselRepository.save(new Vessel("MV Test", "9999999", 3000));
@@ -82,12 +78,17 @@ class FreightOrderControllerTest {
         containerRepository.save(
             new Container("TSTU1234567", ContainerSize.TWENTY_FOOT, ContainerType.DRY));
 
-    Agent agent = new Agent();
-    agent.setName("Test Agent");
-    agent.setEmail("test@agent.com");
-    agent.setCommissionPercent(new BigDecimal("5.00"));
-    agent.setType(AgentType.INTERNAL);
-    savedAgent = agentRepository.save(agent);
+    Customer customer = new Customer();
+    customer.setCompanyName("Test Customer Inc.");
+    customer.setContactName("John Doe");
+    customer.setEmail("John@testCust.com");
+    savedCustomer = customerRepository.save(customer);
+
+    VoyagePrice price = new VoyagePrice();
+    price.setVoyage(savedVoyage);
+    price.setContainerSize(ContainerSize.TWENTY_FOOT);
+    price.setBasePriceUsd(BigDecimal.valueOf(1000));
+    voyagePriceRepository.save(price);
   }
 
   @Test
@@ -96,7 +97,8 @@ class FreightOrderControllerTest {
     CreateFreightOrderRequest request = new CreateFreightOrderRequest();
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
-    request.setAgentId(savedAgent.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("ops-team");
     request.setNotes("Urgent delivery");
 
     mockMvc
@@ -107,8 +109,9 @@ class FreightOrderControllerTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.voyageNumber").value("VOY-001"))
         .andExpect(jsonPath("$.containerCode").value("TSTU1234567"))
-        .andExpect(jsonPath("$.agentId").value(savedAgent.getId()))
-        .andExpect(jsonPath("$.agentName").value("Test Agent"))
+        .andExpect(jsonPath("$.customerName").value("Test Customer Inc."))
+        .andExpect(jsonPath("$.customerEmail").value("John@testCust.com"))
+        .andExpect(jsonPath("$.orderedBy").value("ops-team"))
         .andExpect(jsonPath("$.status").value("PENDING"));
   }
 
@@ -127,51 +130,201 @@ class FreightOrderControllerTest {
   }
 
   @Test
-  @DisplayName("POST /api/v1/freight-orders with non-existent agentId → 404")
-  void createOrder_withNonExistentAgent_returnsNotFound() throws Exception {
+  @DisplayName("GET /api/v1/freight-orders → 200 OK with paged result")
+  void listOrders_returnsOk() throws Exception {
+    int totalOrders = 25;
+    int pageSize = 10;
+
+    for (int i = 0; i < totalOrders; i++) {
+      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+      request.setVoyageId(savedVoyage.getId());
+      request.setContainerId(savedContainer.getId());
+      request.setCustomerId(savedCustomer.getId());
+      request.setOrderedBy("user-" + i);
+      request.setNotes("order-" + i);
+
+      freightOrderService.createOrder(request);
+    }
+    mockMvc
+        .perform(
+            get("/api/v1/freight-orders")
+                .param("page", "0")
+                .param("size", String.valueOf(pageSize)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content").isArray())
+        .andExpect(jsonPath("$.content.length()").value(pageSize))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(pageSize))
+        .andExpect(jsonPath("$.totalElements").value(totalOrders))
+        .andExpect(jsonPath("$.totalPages").value(3));
+  }
+
+  @Test
+  @DisplayName("GET /api/v1/freight-orders without PageSize →  200 OK with default pageSize of 20")
+  void listOrders_withoutPageSize_returnsOk() throws Exception {
+    int totalOrders = 25;
+
+    for (int i = 0; i < totalOrders; i++) {
+      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+      request.setVoyageId(savedVoyage.getId());
+      request.setContainerId(savedContainer.getId());
+      request.setCustomerId(savedCustomer.getId());
+      request.setOrderedBy("user-" + i);
+      request.setNotes("order-" + i);
+
+      freightOrderService.createOrder(request);
+    }
+    mockMvc
+        .perform(get("/api/v1/freight-orders").param("page", "0"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content").isArray())
+        .andExpect(jsonPath("$.content.length()").value(20))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.totalElements").value(totalOrders))
+        .andExpect(jsonPath("$.totalPages").value(2));
+  }
+
+  @Test
+  @DisplayName("GET /api/v1/freight-orders without Page →  200 OK with default page of 0")
+  void listOrders_withoutPage_returnsOk() throws Exception {
+    int totalOrders = 25;
+
+    for (int i = 0; i < totalOrders; i++) {
+      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+      request.setVoyageId(savedVoyage.getId());
+      request.setContainerId(savedContainer.getId());
+      request.setCustomerId(savedCustomer.getId());
+      request.setOrderedBy("user-" + i);
+      request.setNotes("order-" + i);
+
+      freightOrderService.createOrder(request);
+    }
+    mockMvc
+        .perform(get("/api/v1/freight-orders"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content").isArray())
+        .andExpect(jsonPath("$.content.length()").value(20))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.totalElements").value(totalOrders))
+        .andExpect(jsonPath("$.totalPages").value(2));
+  }
+
+  @Test
+  @DisplayName(
+      "GET /api/v1/freight-orders pageSize bt 100 → 200 OK with default max pageSize of 100")
+  void listOrders_pageSize101_returnsOk() throws Exception {
+    int totalOrders = 25;
+
+    for (int i = 0; i < totalOrders; i++) {
+      CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+      request.setVoyageId(savedVoyage.getId());
+      request.setContainerId(savedContainer.getId());
+      request.setCustomerId(savedCustomer.getId());
+      request.setOrderedBy("user-" + i);
+      request.setNotes("order-" + i);
+
+      freightOrderService.createOrder(request);
+    }
+    mockMvc
+        .perform(get("/api/v1/freight-orders").param("page", "0").param("size", "101"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content").isArray())
+        .andExpect(jsonPath("$.content.length()").value(totalOrders))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(100))
+        .andExpect(jsonPath("$.totalElements").value(totalOrders))
+        .andExpect(jsonPath("$.totalPages").value(1));
+  }
+
+  @Test
+  @DisplayName("PATCH /api/v1/freight-orders/{id}/discount → 200 OK")
+  void updateDiscount_returnsUpdatedOrder() throws Exception {
     CreateFreightOrderRequest request = new CreateFreightOrderRequest();
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
-    request.setAgentId(9999L);
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("ops-team");
+    request.setNotes("Urgent delivery");
+    FreightOrder order = freightOrderService.createOrder(request);
+
+    UpdateDiscountRequest updateDiscountRequest = new UpdateDiscountRequest();
+    updateDiscountRequest.setDiscountPercent(BigDecimal.valueOf(10));
+    updateDiscountRequest.setReason("Loyal customer");
 
     mockMvc
         .perform(
-            post("/api/v1/freight-orders")
+            patch("/api/v1/freight-orders/{id}/discount", order.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateDiscountRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.discountPercent").value(10))
+        .andExpect(jsonPath("$.discountReason").value("Loyal customer"))
+        .andExpect(jsonPath("$.finalPrice").value(900.00));
+  }
+
+  @Test
+  @DisplayName("PATCH /api/v1/freight-orders/{id}/discount → 404 Not Found")
+  void updateDiscount_orderNotFound() throws Exception {
+    UpdateDiscountRequest request = new UpdateDiscountRequest();
+    request.setDiscountPercent(BigDecimal.valueOf(10));
+    request.setReason("Test");
+
+    mockMvc
+        .perform(
+            patch("/api/v1/freight-orders/{id}/discount", 9999L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isNotFound());
   }
 
   @Test
-  @DisplayName("POST /api/v1/freight-orders with inactive agent → 409 Conflict")
-  void createOrder_withInactiveAgent_returnsConflict() throws Exception {
-    Agent inactiveAgent = new Agent();
-    inactiveAgent.setName("Inactive Agent");
-    inactiveAgent.setEmail("inactive@agent.com");
-    inactiveAgent.setCommissionPercent(new BigDecimal("3.00"));
-    inactiveAgent.setType(AgentType.EXTERNAL);
-    inactiveAgent.setActive(false);
-    inactiveAgent = agentRepository.save(inactiveAgent);
-
+  @DisplayName("PATCH /api/v1/freight-orders/{id}/discount → 400 Bad Request (invalid input)")
+  void updateDiscount_invalidRequest() throws Exception {
     CreateFreightOrderRequest request = new CreateFreightOrderRequest();
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
-    request.setAgentId(inactiveAgent.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("ops-team");
+    request.setNotes("Urgent delivery");
+    FreightOrder order = freightOrderService.createOrder(request);
+
+    UpdateDiscountRequest updateDiscountRequest = new UpdateDiscountRequest();
+    updateDiscountRequest.setDiscountPercent(BigDecimal.valueOf(150));
+    updateDiscountRequest.setReason("");
 
     mockMvc
         .perform(
-            post("/api/v1/freight-orders")
+            patch("/api/v1/freight-orders/{id}/discount", order.getId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isConflict());
+                .content(objectMapper.writeValueAsString(updateDiscountRequest)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
-  @DisplayName("GET /api/v1/freight-orders → 200 OK with list")
-  void listOrders_returnsOk() throws Exception {
+  @DisplayName("PATCH /api/v1/freight-orders/{id}/discount → 409 Conflict (invalid state)")
+  void updateDiscount_invalidState() throws Exception {
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("ops-team");
+    request.setNotes("Urgent delivery");
+    FreightOrder order = freightOrderService.createOrder(request);
+
+    order.setStatus(OrderStatus.CANCELLED);
+    freightOrderRepository.save(order);
+
+    UpdateDiscountRequest updateDiscountRequest = new UpdateDiscountRequest();
+    updateDiscountRequest.setDiscountPercent(BigDecimal.valueOf(10));
+    updateDiscountRequest.setReason("Test");
+
     mockMvc
-        .perform(get("/api/v1/freight-orders"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray());
+        .perform(
+            patch("/api/v1/freight-orders/{id}/discount", order.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateDiscountRequest)))
+        .andExpect(status().isConflict());
   }
 }

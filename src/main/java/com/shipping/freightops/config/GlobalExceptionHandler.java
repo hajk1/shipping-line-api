@@ -1,5 +1,6 @@
 package com.shipping.freightops.config;
 
+import com.shipping.freightops.exception.BadRequestException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -31,6 +32,11 @@ public class GlobalExceptionHandler {
             .reduce((a, b) -> a + "; " + b)
             .orElse("Validation failed");
     return buildError(HttpStatus.BAD_REQUEST, message);
+  }
+
+  @ExceptionHandler(BadRequestException.class)
+  public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex) {
+    return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
   }
 
   private ResponseEntity<Map<String, Object>> buildError(HttpStatus status, String message) {

@@ -11,6 +11,17 @@ import com.shipping.freightops.repository.ContainerRepository;
 import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import java.util.List;
+import com.shipping.freightops.dto.UpdateDiscountRequest;
+import com.shipping.freightops.entity.*;
+import com.shipping.freightops.enums.ContainerSize;
+import com.shipping.freightops.enums.OrderStatus;
+import com.shipping.freightops.enums.VoyageStatus;
+import com.shipping.freightops.exception.BadRequestException;
+import com.shipping.freightops.repository.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,16 +33,22 @@ public class FreightOrderService {
   private final VoyageRepository voyageRepository;
   private final ContainerRepository containerRepository;
   private final AgentRepository agentRepository;
+  private final CustomerRepository customerRepository;
+  private final VoyagePriceRepository voyagePriceRepository;
 
   public FreightOrderService(
       FreightOrderRepository orderRepository,
       VoyageRepository voyageRepository,
       ContainerRepository containerRepository,
-      AgentRepository agentRepository) {
+      AgentRepository agentRepository,
+     CustomerRepository customerRepository,
+     VoyagePriceRepository voyagePriceRepository) {
     this.orderRepository = orderRepository;
     this.voyageRepository = voyageRepository;
     this.containerRepository = containerRepository;
     this.agentRepository = agentRepository;
+    this.customerRepository = customerRepository;
+    this.voyagePriceRepository = voyagePriceRepository;
   }
 
   @Transactional
@@ -63,12 +80,35 @@ public class FreightOrderService {
     if (!agent.isActive()) {
       throw new IllegalStateException("Cannot place order with inactive agent: " + agent.getId());
     }
+    Customer customer =
+        customerRepository
+            .findById(request.getCustomerId())
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException("Customer not found: " + request.getCustomerId()));
+
+    ContainerSize containerSize = container.getSize();
+    VoyagePrice voyagePrice =
+        voyagePriceRepository
+            .findByVoyageAndContainerSize(voyage, containerSize)
+            .orElseThrow(
+                () -> new BadRequestException("No price defined for voyage and container size"));
+
+    BigDecimal basePriceUsd = voyagePrice.getBasePriceUsd();
+    BigDecimal discountPercentage =
+        request.getDiscountPercent() != null ? request.getDiscountPercent() : BigDecimal.ZERO;
+    BigDecimal finalPriceUsd = calculateFinalPrice(basePriceUsd, discountPercentage);
 
     FreightOrder order = new FreightOrder();
     order.setVoyage(voyage);
     order.setContainer(container);
     order.setAgent(agent);
+    order.setCustomer(customer);
+    order.setOrderedBy(request.getOrderedBy());
     order.setNotes(request.getNotes());
+    order.setBasePriceUsd(basePriceUsd);
+    order.setDiscountPercent(discountPercentage);
+    order.setFinalPrice(finalPriceUsd);
 
     return orderRepository.save(order);
   }
@@ -81,12 +121,39 @@ public class FreightOrderService {
   }
 
   @Transactional(readOnly = true)
-  public List<FreightOrder> getAllOrders() {
-    return orderRepository.findAll();
+  public Page<FreightOrder> getAllOrders(Pageable pageable) {
+    return orderRepository.findAll(pageable);
   }
 
   @Transactional(readOnly = true)
-  public List<FreightOrder> getOrdersByVoyage(Long voyageId) {
-    return orderRepository.findByVoyageId(voyageId);
+  public Page<FreightOrder> getOrdersByVoyage(Long voyageId, Pageable pageable) {
+    return orderRepository.findByVoyageId(voyageId, pageable);
+  }
+
+  @Transactional
+  public FreightOrder updateDiscount(Long id, UpdateDiscountRequest request) {
+    FreightOrder order =
+        orderRepository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Freight order not found: " + id));
+
+    if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.DELIVERED)
+      throw new IllegalStateException(
+          "New discount cannot be applied on the cancelled or delivered freight order");
+
+    BigDecimal discountPercentage =
+        request.getDiscountPercent() != null ? request.getDiscountPercent() : BigDecimal.ZERO;
+
+    order.setDiscountPercent(discountPercentage);
+    order.setDiscountReason(request.getReason());
+    order.setFinalPrice(calculateFinalPrice(order.getBasePriceUsd(), order.getDiscountPercent()));
+    return orderRepository.save(order);
+  }
+
+  private BigDecimal calculateFinalPrice(BigDecimal basePriceUsd, BigDecimal discountPercent) {
+    BigDecimal discount = discountPercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+    return basePriceUsd
+        .multiply(BigDecimal.ONE.subtract(discount))
+        .setScale(2, RoundingMode.HALF_UP);
   }
 }
