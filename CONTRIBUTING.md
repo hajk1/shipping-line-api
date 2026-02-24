@@ -20,9 +20,10 @@
 3. **Do your work** — follow the patterns in `FreightOrderController`
 4. **Run checks before pushing:**
    ```bash
-   mvn clean install   # builds + runs tests
-   mvn fmt:check       # verifies Google code style
+   mvn clean verify   # builds + tests + coverage report
+   mvn fmt:check      # verifies Google code style
    ```
+   CI runs the same checks automatically — but catching issues locally saves time.
 5. **Push and open a PR:**
    ```bash
    git push origin feature/CRD-001-port-crud
@@ -65,6 +66,7 @@ Set up your IDE plugin so you don't have to think about it:
 
 - **One issue per PR** — don't bundle unrelated changes
 - **Tests included** — follow `FreightOrderControllerTest` as a template
+- **Coverage maintained** — CI posts a coverage comment on your PR. Aim for 60%+ on changed files
 - **DTO layer respected** — never expose JPA entities directly in responses
 - **Formatting clean** — `mvn fmt:check` must pass
 - **Small and reviewable** — if it's getting big, break it up
