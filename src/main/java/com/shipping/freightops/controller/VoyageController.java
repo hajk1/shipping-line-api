@@ -55,8 +55,8 @@ public class VoyageController {
 
   @Operation(summary = "Get all containers booked on a voyage (paginated)")
   @ApiResponses({
-          @ApiResponse(responseCode = "200", description = "Voyage found and containers retrieved"),
-          @ApiResponse(responseCode = "404", description = "Voyage not found")
+    @ApiResponse(responseCode = "200", description = "Voyage found and containers retrieved"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found")
   })
   @GetMapping("/{voyageId}/containers")
   public ResponseEntity<PageResponse<VoyageContainerResponse>> getAllContainersByVoyageId(
