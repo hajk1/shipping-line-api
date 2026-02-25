@@ -257,4 +257,20 @@ public class FreightOrderServiceTest {
 
     assertThat(updated.getFinalPrice()).isEqualByComparingTo("0");
   }
+
+  @Test
+  @DisplayName("createOrder → throws when booking is closed")
+  void createOrder_whenBookingClosed_shouldThrowException() {
+    savedVoyage.setBookingOpen(false);
+    voyageRepository.save(savedVoyage);
+
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setOrderedBy("tester");
+
+    assertThatThrownBy(() -> freightOrderService.createOrder(request))
+        .isInstanceOf(IllegalStateException.class);
+  }
 }
