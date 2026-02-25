@@ -1,11 +1,11 @@
 package com.shipping.freightops.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shipping.freightops.dto.BookingStatusUpdateRequest;
 import com.shipping.freightops.dto.CreateVoyageRequest;
 import com.shipping.freightops.dto.VoyagePriceRequest;
 import com.shipping.freightops.entity.*;
@@ -181,7 +181,7 @@ public class VoyageControllerTest {
   public void updateStatus() throws Exception {
     mockMvc
         .perform(
-            MockMvcRequestBuilders.patch(
+            patch(
                 "/api/v1/voyages/"
                     + this.voyage.getId().toString()
                     + "/"
@@ -411,5 +411,54 @@ public class VoyageControllerTest {
   void getLoadSummary_notFound() throws Exception {
 
     mockMvc.perform(get("/api/v1/voyages/999999/load")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("PATCH /booking-status → closes booking")
+  void updateBookingStatus_closeBooking() throws Exception {
+
+    BookingStatusUpdateRequest request = new BookingStatusUpdateRequest();
+    request.setBookingOpen(false);
+
+    mockMvc
+        .perform(
+            patch("/api/v1/voyages/" + voyage.getId() + "/booking-status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.bookingOpen").value(false));
+  }
+
+  @Test
+  @DisplayName("PATCH /booking-status → opens booking")
+  void updateBookingStatus_openBooking() throws Exception {
+    voyage.setBookingOpen(false);
+    voyageRepository.save(voyage);
+
+    BookingStatusUpdateRequest request = new BookingStatusUpdateRequest();
+    request.setBookingOpen(true);
+
+    mockMvc
+        .perform(
+            patch("/api/v1/voyages/" + voyage.getId() + "/booking-status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.bookingOpen").value(true));
+  }
+
+  @Test
+  @DisplayName("PATCH /booking-status → 404 when voyage not found")
+  void updateBookingStatus_notFound() throws Exception {
+
+    BookingStatusUpdateRequest request = new BookingStatusUpdateRequest();
+    request.setBookingOpen(false);
+
+    mockMvc
+        .perform(
+            patch("/api/v1/voyages/999999/booking-status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound());
   }
 }
