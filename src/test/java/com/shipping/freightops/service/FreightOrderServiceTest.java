@@ -6,6 +6,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
 import com.shipping.freightops.dto.UpdateDiscountRequest;
 import com.shipping.freightops.entity.*;
+import com.shipping.freightops.enums.AgentType;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
 import com.shipping.freightops.enums.OrderStatus;
@@ -32,10 +33,12 @@ public class FreightOrderServiceTest {
   @Autowired private VesselRepository vesselRepository;
   @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
+  @Autowired private AgentRepository agentRepository;
 
   private Voyage savedVoyage;
   private Container savedContainer;
   private Customer savedCustomer;
+  private Agent savedAgent;
 
   @BeforeEach
   void setUp() {
@@ -46,6 +49,7 @@ public class FreightOrderServiceTest {
     customerRepository.deleteAll();
     vesselRepository.deleteAll();
     portRepository.deleteAll();
+    agentRepository.deleteAll();
 
     Port departure = portRepository.save(new Port("AEJEA", "Jebel Ali", "UAE"));
     Port arrival = portRepository.save(new Port("CNSHA", "Shanghai", "China"));
@@ -78,6 +82,14 @@ public class FreightOrderServiceTest {
     price.setContainerSize(ContainerSize.TWENTY_FOOT);
     price.setBasePriceUsd(BigDecimal.valueOf(1000));
     voyagePriceRepository.save(price);
+
+    savedAgent = new Agent();
+    savedAgent.setActive(true);
+    savedAgent.setName("Test Agent");
+    savedAgent.setEmail("agent@somewhere.com");
+    savedAgent.setType(AgentType.INTERNAL);
+    savedAgent.setCommissionPercent(BigDecimal.TEN);
+    agentRepository.save(savedAgent);
   }
 
   @Test
@@ -89,6 +101,7 @@ public class FreightOrderServiceTest {
     request.setCustomerId(savedCustomer.getId());
     request.setOrderedBy("tester");
     request.setDiscountPercent(BigDecimal.valueOf(10)); // 10%
+    request.setAgentId(savedAgent.getId());
 
     FreightOrder order = freightOrderService.createOrder(request);
 
@@ -105,6 +118,7 @@ public class FreightOrderServiceTest {
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
     request.setOrderedBy("tester");
+    request.setAgentId(savedAgent.getId());
 
     FreightOrder order = freightOrderService.createOrder(request);
 
@@ -121,6 +135,7 @@ public class FreightOrderServiceTest {
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
 
     assertThatThrownBy(() -> freightOrderService.createOrder(request))
         .isInstanceOf(BadRequestException.class);
@@ -161,6 +176,7 @@ public class FreightOrderServiceTest {
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
     request.setOrderedBy("tester");
+    request.setAgentId(savedAgent.getId());
 
     FreightOrder order = freightOrderService.createOrder(request);
 
@@ -183,6 +199,7 @@ public class FreightOrderServiceTest {
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
     request.setOrderedBy("tester");
+    request.setAgentId(savedAgent.getId());
 
     FreightOrder order = freightOrderService.createOrder(request);
 
@@ -216,6 +233,7 @@ public class FreightOrderServiceTest {
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
     request.setOrderedBy("tester");
+    request.setAgentId(savedAgent.getId());
 
     FreightOrder order = freightOrderService.createOrder(request);
 
@@ -246,6 +264,7 @@ public class FreightOrderServiceTest {
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
     request.setOrderedBy("tester");
+    request.setAgentId(savedAgent.getId());
 
     FreightOrder order = freightOrderService.createOrder(request);
 

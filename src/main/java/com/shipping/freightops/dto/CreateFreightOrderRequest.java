@@ -15,6 +15,9 @@ public class CreateFreightOrderRequest {
   @NotNull(message = "Container ID is required")
   private Long containerId;
 
+  @NotNull(message = "Agent ID is required")
+  private Long agentId;
+
   @NotNull(message = "Customer ID is required")
   private Long customerId;
 
@@ -41,6 +44,14 @@ public class CreateFreightOrderRequest {
 
   public void setContainerId(Long containerId) {
     this.containerId = containerId;
+  }
+
+  public Long getAgentId() {
+    return agentId;
+  }
+
+  public void setAgentId(Long agentId) {
+    this.agentId = agentId;
   }
 
   public Long getCustomerId() {

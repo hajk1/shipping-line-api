@@ -27,6 +27,12 @@ public class FreightOrder extends BaseEntity {
   @JoinColumn(name = "container_id", nullable = false)
   private Container container;
 
+  /** The agent who placed this order. */
+  @NotNull
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "agent_id", nullable = false)
+  private Agent agent;
+
   @NotNull
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "customer_id", nullable = false)
@@ -36,6 +42,14 @@ public class FreightOrder extends BaseEntity {
   @NotBlank
   @Column(nullable = false)
   private String orderedBy;
+
+  public String getOrderedBy() {
+    return orderedBy;
+  }
+
+  public void setOrderedBy(String orderedBy) {
+    this.orderedBy = orderedBy;
+  }
 
   @Column(length = 500)
   private String notes;
@@ -90,12 +104,12 @@ public class FreightOrder extends BaseEntity {
     this.container = container;
   }
 
-  public String getOrderedBy() {
-    return orderedBy;
+  public Agent getAgent() {
+    return agent;
   }
 
-  public void setOrderedBy(String orderedBy) {
-    this.orderedBy = orderedBy;
+  public void setAgent(Agent agent) {
+    this.agent = agent;
   }
 
   public String getNotes() {

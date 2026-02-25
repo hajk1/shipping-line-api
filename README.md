@@ -1,5 +1,11 @@
 # Freight Operations API
 
+![CI](https://github.com/hajk1/shipping-line-api/actions/workflows/ci.yml/badge.svg)
+![Java](https://img.shields.io/badge/Java-21+-blue?logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.5-green?logo=springboot)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
+
 A Spring Boot POC for a shipping line backend. Internal operations teams can create voyages between ports and book containers (freight orders) onto those voyages.
 
 ## Domain Model
@@ -185,14 +191,41 @@ To check formatting without changing files:
 
 ## Useful Commands
 
-| Command                        | Description                     |
-|--------------------------------|---------------------------------|
-| `./mvnw clean install`         | Build + run tests               |
-| `./mvnw spring-boot:run`       | Start the app                   |
-| `./mvnw test`                  | Run tests only (H2, no Docker)  |
-| `./mvnw fmt:format`            | Format code (Google style)      |
-| `docker compose -f docker/docker-compose.yml up -d`   | Start PostgreSQL   |
-| `docker compose -f docker/docker-compose.yml down -v`  | Stop + delete data |
+| Command                                               | Description                    |
+|-------------------------------------------------------|--------------------------------|
+| `mvn clean install`                                   | Build + run tests              |
+| `mvn clean verify`                                    | Build + test + coverage report |
+| `mvn spring-boot:run`                                 | Start the app                  |
+| `mvn test`                                            | Run tests only (H2, no Docker) |
+| `mvn fmt:format`                                      | Format code (Google style)     |
+| `mvn fmt:check`                                       | Check format without changing  |
+| `docker compose -f docker/docker-compose.yml up -d`   | Start PostgreSQL               |
+| `docker compose -f docker/docker-compose.yml down -v` | Stop + delete data             |
+
+After `mvn clean verify`, open `target/site/jacoco/index.html` to browse the coverage report
+locally.
+
+## CI / GitHub Actions
+
+Every push to `master`/`develop` and every PR triggers the CI pipeline:
+
+1. **Build & Test** — `mvn clean verify` with JDK 21
+2. **Format Check** — `mvn fmt:check` fails the build if code isn't Google-formatted
+3. **Test Coverage** — JaCoCo generates a report, posted as a PR comment with coverage diff
+4. **Test Results** — Surefire results published as a GitHub check
+
+Coverage reports are uploaded as build artifacts and retained for 14 days. On PRs, the bot posts a
+comment with overall coverage and per-file diff — minimum thresholds are 40% overall and 60% on
+changed files.
+
+To run the same checks locally before pushing:
+
+```bash
+mvn clean verify     # build + test + coverage report
+mvn fmt:check        # format check (no changes)
+```
+
+Coverage HTML report is generated at `target/site/jacoco/index.html`.
 
 ## Contributing
 

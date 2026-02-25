@@ -3,11 +3,19 @@ package com.shipping.freightops.service;
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
 import com.shipping.freightops.dto.UpdateDiscountRequest;
 import com.shipping.freightops.entity.*;
+import com.shipping.freightops.entity.Agent;
+import com.shipping.freightops.entity.Container;
+import com.shipping.freightops.entity.FreightOrder;
+import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.enums.VoyageStatus;
 import com.shipping.freightops.exception.BadRequestException;
 import com.shipping.freightops.repository.*;
+import com.shipping.freightops.repository.AgentRepository;
+import com.shipping.freightops.repository.ContainerRepository;
+import com.shipping.freightops.repository.FreightOrderRepository;
+import com.shipping.freightops.repository.VoyageRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import org.springframework.data.domain.Page;
@@ -22,6 +30,7 @@ public class FreightOrderService {
   private final FreightOrderRepository orderRepository;
   private final VoyageRepository voyageRepository;
   private final ContainerRepository containerRepository;
+  private final AgentRepository agentRepository;
   private final CustomerRepository customerRepository;
   private final VoyagePriceRepository voyagePriceRepository;
 
@@ -29,11 +38,13 @@ public class FreightOrderService {
       FreightOrderRepository orderRepository,
       VoyageRepository voyageRepository,
       ContainerRepository containerRepository,
+      AgentRepository agentRepository,
       CustomerRepository customerRepository,
       VoyagePriceRepository voyagePriceRepository) {
     this.orderRepository = orderRepository;
     this.voyageRepository = voyageRepository;
     this.containerRepository = containerRepository;
+    this.agentRepository = agentRepository;
     this.customerRepository = customerRepository;
     this.voyagePriceRepository = voyagePriceRepository;
   }
@@ -61,6 +72,15 @@ public class FreightOrderService {
                     new IllegalArgumentException(
                         "Container not found: " + request.getContainerId()));
 
+    Agent agent =
+        agentRepository
+            .findById(request.getAgentId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Agent not found: " + request.getAgentId()));
+
+    if (!agent.isActive()) {
+      throw new IllegalStateException("Cannot place order with inactive agent: " + agent.getId());
+    }
     Customer customer =
         customerRepository
             .findById(request.getCustomerId())
@@ -83,6 +103,7 @@ public class FreightOrderService {
     FreightOrder order = new FreightOrder();
     order.setVoyage(voyage);
     order.setContainer(container);
+    order.setAgent(agent);
     order.setCustomer(customer);
     order.setOrderedBy(request.getOrderedBy());
     order.setNotes(request.getNotes());
@@ -107,6 +128,9 @@ public class FreightOrderService {
 
   @Transactional(readOnly = true)
   public Page<FreightOrder> getOrdersByVoyage(Long voyageId, Pageable pageable) {
+    voyageRepository
+        .findById(voyageId)
+        .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
     return orderRepository.findByVoyageId(voyageId, pageable);
   }
 

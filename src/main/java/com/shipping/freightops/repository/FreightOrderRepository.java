@@ -13,6 +13,8 @@ public interface FreightOrderRepository extends JpaRepository<FreightOrder, Long
 
   Page<FreightOrder> findByStatus(OrderStatus status, Pageable pageable);
 
+  List<FreightOrder> findByAgentId(Long agentId);
+
   Page<FreightOrder> findByOrderedBy(String orderedBy, Pageable pageable);
 
   List<FreightOrder> findByVoyageIdAndStatusIn(Long voyageId, List<OrderStatus> statuses);

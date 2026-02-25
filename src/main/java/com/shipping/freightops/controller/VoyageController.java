@@ -5,6 +5,7 @@ import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.entity.VoyagePrice;
 import com.shipping.freightops.enums.VoyageStatus;
+import com.shipping.freightops.service.FreightOrderService;
 import com.shipping.freightops.service.VoyageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,9 +24,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/voyages")
 public class VoyageController {
   private final VoyageService voyageService;
+  private final FreightOrderService freightOrderService;
 
-  public VoyageController(VoyageService voyageService) {
+  public VoyageController(VoyageService voyageService, FreightOrderService freightOrderService) {
     this.voyageService = voyageService;
+    this.freightOrderService = freightOrderService;
   }
 
   @Operation(summary = "Get all voyages")
@@ -48,6 +51,20 @@ public class VoyageController {
     Voyage voyage = voyageService.getById(voyageId);
     VoyageResponse response = new VoyageResponse(voyage);
     return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "Get all containers booked on a voyage (paginated)")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Voyage found and containers retrieved"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found")
+  })
+  @GetMapping("/{voyageId}/containers")
+  public ResponseEntity<PageResponse<VoyageContainerResponse>> getAllContainersByVoyageId(
+      @PathVariable Long voyageId, @PageableDefault(size = 20) Pageable pageable) {
+
+    Page<FreightOrder> order = freightOrderService.getOrdersByVoyage(voyageId, pageable);
+    Page<VoyageContainerResponse> containers = order.map(VoyageContainerResponse::fromEntity);
+    return ResponseEntity.ok(PageResponse.from(containers));
   }
 
   @Operation(summary = "Create a new voyage")
