@@ -39,7 +39,8 @@ public class FreightOrderController {
     @ApiResponse(responseCode = "201", description = "Freight order successfully created"),
     @ApiResponse(responseCode = "400", description = "Invalid request data"),
     @ApiResponse(responseCode = "404", description = "Voyage or Container not found"),
-    @ApiResponse(responseCode = "409", description = "Cannot book freight on a cancelled voyage")
+    @ApiResponse(responseCode = "409", description = "Cannot book freight on a cancelled voyage"),
+    @ApiResponse(responseCode = "409", description = "Booking is closed for this voyage")
   })
   @PostMapping
   public ResponseEntity<FreightOrderResponse> create(

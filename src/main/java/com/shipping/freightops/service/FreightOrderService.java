@@ -50,6 +50,9 @@ public class FreightOrderService {
       throw new IllegalStateException("Cannot book freight on a cancelled voyage");
     }
 
+    if (!voyage.isBookingOpen())
+      throw new IllegalStateException("Booking is closed for this voyage");
+
     Container container =
         containerRepository
             .findById(request.getContainerId())
