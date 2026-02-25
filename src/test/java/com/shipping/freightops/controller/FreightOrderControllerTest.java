@@ -363,6 +363,7 @@ class FreightOrderControllerTest {
     request.setCustomerId(savedCustomer.getId());
     request.setOrderedBy("ops-team");
     request.setNotes("Urgent delivery");
+    request.setAgentId(savedAgent.getId());
 
     mockMvc
         .perform(

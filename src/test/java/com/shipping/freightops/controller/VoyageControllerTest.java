@@ -10,10 +10,7 @@ import com.shipping.freightops.dto.CreateVoyageRequest;
 import com.shipping.freightops.dto.VoyagePriceRequest;
 import com.shipping.freightops.entity.*;
 import com.shipping.freightops.enums.AgentType;
-import com.shipping.freightops.entity.*;
 import com.shipping.freightops.enums.ContainerSize;
-import com.shipping.freightops.enums.ContainerType;
-import com.shipping.freightops.repository.*;
 import com.shipping.freightops.enums.ContainerType;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.repository.*;
@@ -44,9 +41,6 @@ public class VoyageControllerTest {
   @Autowired private FreightOrderRepository freightOrderRepository;
   @Autowired private CustomerRepository customerRepository;
   @Autowired private AgentRepository agentRepository;
-  @Autowired private FreightOrderRepository freightOrderRepository;
-  @Autowired private ContainerRepository containerRepository;
-  @Autowired private CustomerRepository customerRepository;
 
   private Vessel vessel;
   private Port arrivalPort;
@@ -68,8 +62,6 @@ public class VoyageControllerTest {
     vesselRepository.deleteAll();
     portRepository.deleteAll();
     agentRepository.deleteAll();
-    containerRepository.deleteAll();
-    customerRepository.deleteAll();
 
     Port port = new Port("TGKRY", "kalgary", "Togo");
     Port port2 = new Port("JPTKY", "tokyo", "Japan");
@@ -350,6 +342,7 @@ public class VoyageControllerTest {
     order1.setDiscountPercent(BigDecimal.ZERO);
     order1.setFinalPrice(BigDecimal.valueOf(1000));
     order1.setStatus(OrderStatus.PENDING);
+    order1.setAgent(agent);
 
     FreightOrder order2 = new FreightOrder();
     order2.setVoyage(voyage);
@@ -360,6 +353,7 @@ public class VoyageControllerTest {
     order2.setDiscountPercent(BigDecimal.ZERO);
     order2.setFinalPrice(BigDecimal.valueOf(2000));
     order2.setStatus(OrderStatus.CONFIRMED);
+    order2.setAgent(agent);
 
     freightOrderRepository.saveAll(List.of(order1, order2));
 
@@ -402,6 +396,7 @@ public class VoyageControllerTest {
     order1.setDiscountPercent(BigDecimal.ZERO);
     order1.setFinalPrice(BigDecimal.valueOf(1000));
     order1.setStatus(OrderStatus.CANCELLED);
+    order1.setAgent(agent);
 
     FreightOrder order2 = new FreightOrder();
     order2.setVoyage(voyage);
@@ -412,6 +407,7 @@ public class VoyageControllerTest {
     order2.setDiscountPercent(BigDecimal.ZERO);
     order2.setFinalPrice(BigDecimal.valueOf(2000));
     order2.setStatus(OrderStatus.CONFIRMED);
+    order2.setAgent(agent);
 
     freightOrderRepository.saveAll(List.of(order1, order2));
 
