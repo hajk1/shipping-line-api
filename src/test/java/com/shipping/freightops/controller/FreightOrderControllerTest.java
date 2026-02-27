@@ -164,10 +164,10 @@ class FreightOrderControllerTest {
   @Test
   @DisplayName("GET /api/v1/freight-orders → 200 OK with paged result")
   void listOrders_returnsOk() throws Exception {
-    int totalOrders = 25;
+    int totalOrders = 27;
     int pageSize = 10;
 
-    for (int i = 0; i < totalOrders; i++) {
+    for (int i = 1; i < totalOrders; i++) {
       CreateFreightOrderRequest request = new CreateFreightOrderRequest();
       request.setVoyageId(savedVoyage.getId());
       request.setContainerId(savedContainer.getId());
@@ -195,9 +195,9 @@ class FreightOrderControllerTest {
   @Test
   @DisplayName("GET /api/v1/freight-orders without PageSize →  200 OK with default pageSize of 20")
   void listOrders_withoutPageSize_returnsOk() throws Exception {
-    int totalOrders = 25;
+    int totalOrders = 27;
 
-    for (int i = 0; i < totalOrders; i++) {
+    for (int i = 1; i < totalOrders; i++) {
       CreateFreightOrderRequest request = new CreateFreightOrderRequest();
       request.setVoyageId(savedVoyage.getId());
       request.setContainerId(savedContainer.getId());
@@ -222,9 +222,9 @@ class FreightOrderControllerTest {
   @Test
   @DisplayName("GET /api/v1/freight-orders without Page →  200 OK with default page of 0")
   void listOrders_withoutPage_returnsOk() throws Exception {
-    int totalOrders = 25;
+    int totalOrders = 27;
 
-    for (int i = 0; i < totalOrders; i++) {
+    for (int i = 1; i < totalOrders; i++) {
       CreateFreightOrderRequest request = new CreateFreightOrderRequest();
       request.setVoyageId(savedVoyage.getId());
       request.setContainerId(savedContainer.getId());
@@ -250,9 +250,9 @@ class FreightOrderControllerTest {
   @DisplayName(
       "GET /api/v1/freight-orders pageSize bt 100 → 200 OK with default max pageSize of 100")
   void listOrders_pageSize101_returnsOk() throws Exception {
-    int totalOrders = 25;
+    int totalOrders = 27;
 
-    for (int i = 0; i < totalOrders; i++) {
+    for (int i = 1; i < totalOrders; i++) {
       CreateFreightOrderRequest request = new CreateFreightOrderRequest();
       request.setVoyageId(savedVoyage.getId());
       request.setContainerId(savedContainer.getId());
