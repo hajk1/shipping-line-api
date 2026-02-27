@@ -16,6 +16,9 @@ import com.shipping.freightops.repository.*;
 import com.shipping.freightops.service.FreightOrderService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import org.checkerframework.checker.units.qual.s;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +27,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -53,6 +57,7 @@ class FreightOrderControllerTest {
   private Container savedContainer;
   private Customer savedCustomer;
   private Agent savedAgent;
+  private Long freightOrderId;
 
   @BeforeEach
   void setUp() {
@@ -103,6 +108,20 @@ class FreightOrderControllerTest {
     savedAgent.setType(AgentType.INTERNAL);
     savedAgent.setCommissionPercent(BigDecimal.TEN);
     agentRepository.save(savedAgent);
+    FreightOrder order = new FreightOrder();
+    order.setContainer(savedContainer);
+    order.setDiscountReason("random");
+    order.setNotes("dsfjk");
+    order.setDiscountPercent(BigDecimal.valueOf(2));
+    order.setVoyage(savedVoyage);
+    order.setStatus(OrderStatus.DELIVERED);
+    order.setCustomer(savedCustomer);
+    order.setBasePriceUsd(BigDecimal.valueOf(115));
+    order.setAgent(savedAgent);
+    order.setFinalPrice(BigDecimal.valueOf(126));
+    order.setOrderedBy("me");
+    FreightOrder savedOrder = freightOrderRepository.save(order);
+    freightOrderId  = savedOrder.getId();
   }
 
   @Test
@@ -371,5 +390,33 @@ class FreightOrderControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isConflict());
+  }
+  @Test
+  @DisplayName("GET /api/v1/freight-orders/{id}/invoice → 200 OK w")
+  void  getFreightOrderInvoice() throws Exception {
+    mockMvc
+            .perform(
+                    get("/api/v1/freight-orders/"+freightOrderId.toString()+"/invoice"))
+            .andExpect(status().isOk())
+            .andExpect(MockMvcResultMatchers.content().string(CoreMatchers.containsString("PDF")));
+  }
+  @Test
+  @DisplayName("GET /api/v1/freight-orders/{id}/invoice → 404 NOT_FOUND")
+  void  getFreightOrderInvoiceWithWrongId() throws Exception {
+    mockMvc
+            .perform(
+                    get("/api/v1/freight-orders/"+Long.valueOf(1)+"/invoice"))
+            .andExpect(status().isNotFound());
+  }
+  @Test
+  @DisplayName("GET /api/v1/freight-orders/{id}/invoice → 409 Conflict")
+  void  getFreightOrderInvoiceWithOrderStatusNotDelivered() throws Exception {
+    FreightOrder order = freightOrderRepository.getReferenceById(freightOrderId);
+    order.setStatus(OrderStatus.IN_TRANSIT);
+    freightOrderRepository.save(order);
+    mockMvc
+            .perform(
+                    get("/api/v1/freight-orders/"+freightOrderId+"/invoice"))
+            .andExpect(status().isConflict());
   }
 }
