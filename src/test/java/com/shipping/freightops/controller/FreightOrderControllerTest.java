@@ -16,8 +16,6 @@ import com.shipping.freightops.repository.*;
 import com.shipping.freightops.service.FreightOrderService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import org.checkerframework.checker.units.qual.s;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -121,7 +119,7 @@ class FreightOrderControllerTest {
     order.setFinalPrice(BigDecimal.valueOf(126));
     order.setOrderedBy("me");
     FreightOrder savedOrder = freightOrderRepository.save(order);
-    freightOrderId  = savedOrder.getId();
+    freightOrderId = savedOrder.getId();
   }
 
   @Test
@@ -391,32 +389,32 @@ class FreightOrderControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isConflict());
   }
+
   @Test
   @DisplayName("GET /api/v1/freight-orders/{id}/invoice → 200 OK w")
-  void  getFreightOrderInvoice() throws Exception {
+  void getFreightOrderInvoice() throws Exception {
     mockMvc
-            .perform(
-                    get("/api/v1/freight-orders/"+freightOrderId.toString()+"/invoice"))
-            .andExpect(status().isOk())
-            .andExpect(MockMvcResultMatchers.content().string(CoreMatchers.containsString("PDF")));
+        .perform(get("/api/v1/freight-orders/" + freightOrderId.toString() + "/invoice"))
+        .andExpect(status().isOk())
+        .andExpect(MockMvcResultMatchers.content().string(CoreMatchers.containsString("PDF")));
   }
+
   @Test
   @DisplayName("GET /api/v1/freight-orders/{id}/invoice → 404 NOT_FOUND")
-  void  getFreightOrderInvoiceWithWrongId() throws Exception {
+  void getFreightOrderInvoiceWithWrongId() throws Exception {
     mockMvc
-            .perform(
-                    get("/api/v1/freight-orders/"+Long.valueOf(1)+"/invoice"))
-            .andExpect(status().isNotFound());
+        .perform(get("/api/v1/freight-orders/" + Long.valueOf(1) + "/invoice"))
+        .andExpect(status().isNotFound());
   }
+
   @Test
   @DisplayName("GET /api/v1/freight-orders/{id}/invoice → 409 Conflict")
-  void  getFreightOrderInvoiceWithOrderStatusNotDelivered() throws Exception {
+  void getFreightOrderInvoiceWithOrderStatusNotDelivered() throws Exception {
     FreightOrder order = freightOrderRepository.getReferenceById(freightOrderId);
     order.setStatus(OrderStatus.IN_TRANSIT);
     freightOrderRepository.save(order);
     mockMvc
-            .perform(
-                    get("/api/v1/freight-orders/"+freightOrderId+"/invoice"))
-            .andExpect(status().isConflict());
+        .perform(get("/api/v1/freight-orders/" + freightOrderId + "/invoice"))
+        .andExpect(status().isConflict());
   }
 }

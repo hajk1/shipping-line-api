@@ -1,7 +1,6 @@
 package com.shipping.freightops.controller;
 
 import com.itextpdf.text.DocumentException;
-import com.shipping.freightops.config.GlobalExceptionHandler;
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
 import com.shipping.freightops.dto.FreightOrderResponse;
 import com.shipping.freightops.dto.PageResponse;
@@ -13,7 +12,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
-
 import java.io.FileNotFoundException;
 import java.net.URI;
 import org.springframework.data.domain.Page;
@@ -37,7 +35,7 @@ public class FreightOrderController {
 
   public FreightOrderController(FreightOrderService service, InvoiceService invoiceService) {
     this.service = service;
-      this.invoiceService = invoiceService;
+    this.invoiceService = invoiceService;
   }
 
   /** Create a new freight order. */
@@ -87,15 +85,17 @@ public class FreightOrderController {
     Page<FreightOrderResponse> mapped = orders.map(FreightOrderResponse::fromEntity);
     return ResponseEntity.ok(PageResponse.from(mapped));
   }
+
   @GetMapping("/{id}/invoice")
-  public ResponseEntity<byte[]> getFreightOrderInvoice(@PathVariable Long id){
-      try {
-          byte[] pdf = invoiceService.generateInvoice(id);
-          return ResponseEntity.ok(pdf);
-      } catch (FileNotFoundException | DocumentException e) {
-        throw new IllegalStateException();
-      }
+  public ResponseEntity<byte[]> getFreightOrderInvoice(@PathVariable Long id) {
+    try {
+      byte[] pdf = invoiceService.generateInvoice(id);
+      return ResponseEntity.ok(pdf);
+    } catch (FileNotFoundException | DocumentException e) {
+      throw new IllegalStateException();
+    }
   }
+
   @Operation(summary = "Update discount for a freight order")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Freight order updated successfully"),
