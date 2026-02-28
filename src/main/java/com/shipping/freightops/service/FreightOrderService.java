@@ -60,7 +60,7 @@ public class FreightOrderService {
   public FreightOrder createOrder(CreateFreightOrderRequest request) {
     Voyage voyage =
         voyageRepository
-            .findById(request.getVoyageId())
+            .findByIdForUpdate(request.getVoyageId())
             .orElseThrow(
                 () -> new IllegalArgumentException("Voyage not found: " + request.getVoyageId()));
 
@@ -101,6 +101,8 @@ public class FreightOrderService {
             .findByVoyageAndContainerSize(voyage, containerSize)
             .orElseThrow(
                 () -> new BadRequestException("No price defined for voyage and container size"));
+
+    validateCapacity(voyage, container);
 
     BigDecimal basePriceUsd = voyagePrice.getBasePriceUsd();
     BigDecimal discountPercentage =
@@ -190,6 +192,23 @@ public class FreightOrderService {
           bookingProperties.getAutoCutoffPercent());
 
       voyageRepository.save(voyage);
+    }
+  }
+
+  private void validateCapacity(Voyage voyage, Container container) {
+
+    int currentLoadTeu = orderRepository.sumTeuByVoyageId(voyage.getId());
+    int maxCapacityTeu = voyage.getMaxCapacityTeu();
+    int remainingTeu = maxCapacityTeu - currentLoadTeu;
+
+    int requestedTeu = container.getSize().getTeu();
+
+    if (requestedTeu > remainingTeu) {
+      throw new IllegalStateException(
+          String.format(
+              "Not enough capacity on voyage. Remaining capacity: %d TEU. "
+                  + "Requested container (%s) requires %d TEU.",
+              remainingTeu, container.getSize(), requestedTeu));
     }
   }
 }
