@@ -147,8 +147,8 @@ class FreightOrderControllerTest {
   @Test
   @DisplayName("GET /api/v1/freight-orders → 200 OK with paged result")
   void listOrders_returnsOk() throws Exception {
-    int totalOrders = 25;
-    int pageSize = 10;
+    int totalOrders = 5;
+    int pageSize = 2;
 
     for (int i = 0; i < totalOrders; i++) {
       CreateFreightOrderRequest request = new CreateFreightOrderRequest();

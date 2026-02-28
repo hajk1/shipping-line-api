@@ -30,6 +30,9 @@ public class Container extends BaseEntity {
   @Column(nullable = false)
   private ContainerType type;
 
+  @Column(nullable = false)
+  private int teu;
+
   public Container() {}
 
   public Container(String containerCode, ContainerSize size, ContainerType type) {
@@ -60,5 +63,9 @@ public class Container extends BaseEntity {
 
   public void setType(ContainerType type) {
     this.type = type;
+  }
+
+  public int getTeu() {
+    return size.getTeu();
   }
 }

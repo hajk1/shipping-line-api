@@ -1,5 +1,6 @@
 package com.shipping.freightops.service;
 
+import com.shipping.freightops.config.BookingProperties;
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
 import com.shipping.freightops.dto.UpdateDiscountRequest;
 import com.shipping.freightops.entity.*;
@@ -18,6 +19,8 @@ import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,8 @@ public class FreightOrderService {
   private final AgentRepository agentRepository;
   private final CustomerRepository customerRepository;
   private final VoyagePriceRepository voyagePriceRepository;
+  private final BookingProperties bookingProperties;
+  private static final Logger log = LoggerFactory.getLogger(FreightOrderService.class);
 
   public FreightOrderService(
       FreightOrderRepository orderRepository,
@@ -40,13 +45,15 @@ public class FreightOrderService {
       ContainerRepository containerRepository,
       AgentRepository agentRepository,
       CustomerRepository customerRepository,
-      VoyagePriceRepository voyagePriceRepository) {
+      VoyagePriceRepository voyagePriceRepository,
+      BookingProperties bookingProperties) {
     this.orderRepository = orderRepository;
     this.voyageRepository = voyageRepository;
     this.containerRepository = containerRepository;
     this.agentRepository = agentRepository;
     this.customerRepository = customerRepository;
     this.voyagePriceRepository = voyagePriceRepository;
+    this.bookingProperties = bookingProperties;
   }
 
   @Transactional
@@ -111,7 +118,10 @@ public class FreightOrderService {
     order.setDiscountPercent(discountPercentage);
     order.setFinalPrice(finalPriceUsd);
 
-    return orderRepository.save(order);
+    FreightOrder savedOrder = orderRepository.save(order);
+
+    handleAutoCutoff(voyage);
+    return savedOrder;
   }
 
   @Transactional(readOnly = true)
@@ -159,5 +169,27 @@ public class FreightOrderService {
     return basePriceUsd
         .multiply(BigDecimal.ONE.subtract(discount))
         .setScale(2, RoundingMode.HALF_UP);
+  }
+
+  private void handleAutoCutoff(Voyage voyage) {
+    int currentLoadTeu = orderRepository.sumTeuByVoyageId(voyage.getId());
+    int maxCapacityTeu = voyage.getMaxCapacityTeu();
+
+    double loadFactor = (double) currentLoadTeu / maxCapacityTeu;
+    double threshold = bookingProperties.getAutoCutoffPercent() / 100.0;
+
+    if (loadFactor >= threshold && voyage.isBookingOpen()) {
+      voyage.setBookingOpen(false);
+
+      log.warn(
+          "Auto cutoff triggered for voyage {}. Load factor: {} ({} / {}), threshold: {}%",
+          voyage.getId(),
+          loadFactor,
+          currentLoadTeu,
+          maxCapacityTeu,
+          bookingProperties.getAutoCutoffPercent());
+
+      voyageRepository.save(voyage);
+    }
   }
 }

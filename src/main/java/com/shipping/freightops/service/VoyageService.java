@@ -144,14 +144,7 @@ public class VoyageService {
   }
 
   public int calculateCurrentLoadTeu(List<FreightOrder> orders) {
-    return orders.stream()
-        .mapToInt(
-            order ->
-                switch (order.getContainer().getSize()) {
-                  case TWENTY_FOOT -> 1;
-                  case FORTY_FOOT -> 2;
-                })
-        .sum();
+    return orders.stream().mapToInt(order -> order.getContainer().getSize().getTeu()).sum();
   }
 
   @Transactional
