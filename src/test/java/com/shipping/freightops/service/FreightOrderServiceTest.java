@@ -3,6 +3,8 @@ package com.shipping.freightops.service;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.shipping.freightops.config.BookingProperties;
+import com.shipping.freightops.dto.BookingStatusUpdateRequest;
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
 import com.shipping.freightops.dto.UpdateDiscountRequest;
 import com.shipping.freightops.entity.*;
@@ -18,12 +20,16 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Transactional
+@ExtendWith(OutputCaptureExtension.class)
 public class FreightOrderServiceTest {
   @Autowired private FreightOrderService freightOrderService;
   @Autowired private VoyageRepository voyageRepository;
@@ -34,6 +40,8 @@ public class FreightOrderServiceTest {
   @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
   @Autowired private AgentRepository agentRepository;
+  @Autowired private BookingProperties bookingProperties;
+  @Autowired private VoyageService voyageService;
 
   private Voyage savedVoyage;
   private Container savedContainer;
@@ -291,5 +299,182 @@ public class FreightOrderServiceTest {
 
     assertThatThrownBy(() -> freightOrderService.createOrder(request))
         .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void createOrder_whenCapacityExceeded_shouldThrow() {
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
+    request.setOrderedBy("test-user");
+
+    savedVoyage.setMaxCapacityTeu(1); // small capacity
+    voyageRepository.save(savedVoyage);
+
+    freightOrderService.createOrder(request);
+
+    assertThatThrownBy(() -> freightOrderService.createOrder(request))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  @DisplayName("createOrder → triggers auto-cutoff when threshold reached")
+  void createOrder_whenThresholdReached_shouldCloseBooking() {
+    savedVoyage.setMaxCapacityTeu(5);
+    savedVoyage.setBookingOpen(true);
+    voyageRepository.save(savedVoyage);
+
+    bookingProperties.setAutoCutoffPercent(50);
+
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
+    request.setOrderedBy("tester");
+
+    for (int i = 0; i < 3; i++) {
+      freightOrderService.createOrder(request);
+    }
+
+    Voyage updatedVoyage = voyageRepository.findById(savedVoyage.getId()).orElseThrow();
+    int currentLoadTeu = freightOrderRepository.sumTeuByVoyageId(savedVoyage.getId());
+
+    assertThat(currentLoadTeu).isEqualTo(3);
+    assertThat(updatedVoyage.isBookingOpen()).isFalse();
+  }
+
+  @Test
+  @DisplayName("createOrder → rejects order if container exceeds remaining capacity")
+  void createOrder_whenContainerExceedsRemainingCapacity_shouldThrow() {
+    // Arrange
+    savedVoyage.setMaxCapacityTeu(2);
+    savedVoyage.setBookingOpen(true);
+    voyageRepository.save(savedVoyage);
+
+    CreateFreightOrderRequest request20ft = new CreateFreightOrderRequest();
+    request20ft.setVoyageId(savedVoyage.getId());
+    request20ft.setContainerId(savedContainer.getId()); // 1 TEU
+    request20ft.setCustomerId(savedCustomer.getId());
+    request20ft.setAgentId(savedAgent.getId());
+    request20ft.setOrderedBy("tester");
+
+    freightOrderService.createOrder(request20ft);
+
+    Container container40ft =
+        containerRepository.save(
+            new Container("TSTU9999999", ContainerSize.FORTY_FOOT, ContainerType.DRY));
+
+    VoyagePrice price = new VoyagePrice();
+    price.setVoyage(savedVoyage);
+    price.setContainerSize(ContainerSize.FORTY_FOOT);
+    price.setBasePriceUsd(BigDecimal.valueOf(1500));
+    voyagePriceRepository.save(price);
+
+    CreateFreightOrderRequest request40ft = new CreateFreightOrderRequest();
+    request40ft.setVoyageId(savedVoyage.getId());
+    request40ft.setContainerId(container40ft.getId()); // 2 TEU
+    request40ft.setCustomerId(savedCustomer.getId());
+    request40ft.setAgentId(savedAgent.getId());
+    request40ft.setOrderedBy("tester");
+
+    assertThatThrownBy(() -> freightOrderService.createOrder(request40ft))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  @DisplayName("createOrder → logs warning when auto-cutoff is triggered")
+  void createOrder_whenAutoCutoffTriggered_shouldLogWarning(CapturedOutput output) {
+    savedVoyage.setMaxCapacityTeu(2);
+    savedVoyage.setBookingOpen(true);
+    voyageRepository.save(savedVoyage);
+
+    bookingProperties.setAutoCutoffPercent(50);
+
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId());
+    request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
+    request.setOrderedBy("tester");
+
+    freightOrderService.createOrder(request);
+
+    assertThat(output.getAll())
+        .contains("Auto cutoff triggered for voyage")
+        .contains(savedVoyage.getId().toString())
+        .contains("threshold: 50%");
+  }
+
+  @Test
+  @DisplayName("createOrder → auto-cutoff triggers then booking can be reopened")
+  void createOrder_autoCutoff_thenReopen_shouldWork() {
+    savedVoyage.setMaxCapacityTeu(2);
+    savedVoyage.setBookingOpen(true);
+    voyageRepository.save(savedVoyage);
+
+    bookingProperties.setAutoCutoffPercent(50); // cutoff at 1 TEU
+
+    CreateFreightOrderRequest request = new CreateFreightOrderRequest();
+    request.setVoyageId(savedVoyage.getId());
+    request.setContainerId(savedContainer.getId()); // 1 TEU
+    request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
+    request.setOrderedBy("tester");
+
+    freightOrderService.createOrder(request);
+
+    Voyage updatedVoyage = voyageRepository.findById(savedVoyage.getId()).orElseThrow();
+    assertThat(updatedVoyage.isBookingOpen()).isFalse();
+
+    BookingStatusUpdateRequest reopenRequest = new BookingStatusUpdateRequest();
+    reopenRequest.setBookingOpen(true);
+    Voyage reopened = voyageService.updateBookingStatus(savedVoyage.getId(), reopenRequest);
+
+    assertThat(reopened.isBookingOpen()).isTrue();
+
+    freightOrderService.createOrder(request);
+    int currentLoadTeu = freightOrderRepository.sumTeuByVoyageId(savedVoyage.getId());
+    assertThat(currentLoadTeu).isEqualTo(2);
+  }
+
+  @Test
+  @DisplayName("createOrder → rejects 40ft container when only 1 TEU remains")
+  void createOrder_when40ftExceedsBut20ftFits_shouldThrowWithClearMessage() {
+    savedVoyage.setMaxCapacityTeu(2);
+    savedVoyage.setBookingOpen(true);
+    voyageRepository.save(savedVoyage);
+
+    CreateFreightOrderRequest request20ft = new CreateFreightOrderRequest();
+    request20ft.setVoyageId(savedVoyage.getId());
+    request20ft.setContainerId(savedContainer.getId()); // 20ft = 1 TEU
+    request20ft.setCustomerId(savedCustomer.getId());
+    request20ft.setAgentId(savedAgent.getId());
+    request20ft.setOrderedBy("tester");
+
+    freightOrderService.createOrder(request20ft);
+
+    Container container40ft =
+        containerRepository.save(
+            new Container("TSTU9999999", ContainerSize.FORTY_FOOT, ContainerType.DRY));
+    VoyagePrice price = new VoyagePrice();
+    price.setVoyage(savedVoyage);
+    price.setContainerSize(ContainerSize.FORTY_FOOT);
+    price.setBasePriceUsd(BigDecimal.valueOf(1500));
+    voyagePriceRepository.save(price);
+
+    CreateFreightOrderRequest request40ft = new CreateFreightOrderRequest();
+    request40ft.setVoyageId(savedVoyage.getId());
+    request40ft.setContainerId(container40ft.getId());
+    request40ft.setCustomerId(savedCustomer.getId());
+    request40ft.setAgentId(savedAgent.getId());
+    request40ft.setOrderedBy("tester");
+
+    assertThatThrownBy(() -> freightOrderService.createOrder(request40ft))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Remaining capacity: 1 TEU")
+        .hasMessageContaining("requires 2 TEU");
   }
 }
