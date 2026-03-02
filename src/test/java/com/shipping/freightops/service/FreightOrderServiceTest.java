@@ -6,6 +6,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.shipping.freightops.dto.CreateFreightOrderRequest;
 import com.shipping.freightops.dto.UpdateDiscountRequest;
 import com.shipping.freightops.entity.*;
+import com.shipping.freightops.enums.AgentType;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
 import com.shipping.freightops.enums.OrderStatus;
@@ -32,14 +33,17 @@ public class FreightOrderServiceTest {
   @Autowired private VesselRepository vesselRepository;
   @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
+  @Autowired private AgentRepository agentRepository;
 
   private Voyage savedVoyage;
   private Container savedContainer;
   private Customer savedCustomer;
+  private Agent savedAgent;
 
   @BeforeEach
   void setUp() {
     freightOrderRepository.deleteAll();
+    agentRepository.deleteAll();
     voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     containerRepository.deleteAll();
@@ -71,6 +75,13 @@ public class FreightOrderServiceTest {
     customer.setEmail("john@test.com");
     savedCustomer = customerRepository.save(customer);
 
+    Agent agent = new Agent();
+    agent.setName("Test Agent");
+    agent.setEmail("agent@test.com");
+    agent.setCommissionPercent(BigDecimal.valueOf(5));
+    agent.setType(AgentType.EXTERNAL);
+    savedAgent = agentRepository.save(agent);
+
     VoyagePrice price = new VoyagePrice();
     price.setVoyage(savedVoyage);
     price.setContainerSize(ContainerSize.TWENTY_FOOT);
@@ -85,6 +96,7 @@ public class FreightOrderServiceTest {
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
     request.setOrderedBy("tester");
     request.setDiscountPercent(BigDecimal.valueOf(10)); // 10%
 
@@ -102,6 +114,7 @@ public class FreightOrderServiceTest {
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
     request.setOrderedBy("tester");
 
     FreightOrder order = freightOrderService.createOrder(request);
@@ -119,6 +132,7 @@ public class FreightOrderServiceTest {
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
 
     assertThatThrownBy(() -> freightOrderService.createOrder(request))
         .isInstanceOf(BadRequestException.class);
@@ -158,6 +172,7 @@ public class FreightOrderServiceTest {
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
     request.setOrderedBy("tester");
 
     FreightOrder order = freightOrderService.createOrder(request);
@@ -180,6 +195,7 @@ public class FreightOrderServiceTest {
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
     request.setOrderedBy("tester");
 
     FreightOrder order = freightOrderService.createOrder(request);
@@ -213,6 +229,7 @@ public class FreightOrderServiceTest {
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
     request.setOrderedBy("tester");
 
     FreightOrder order = freightOrderService.createOrder(request);
@@ -243,6 +260,7 @@ public class FreightOrderServiceTest {
     request.setVoyageId(savedVoyage.getId());
     request.setContainerId(savedContainer.getId());
     request.setCustomerId(savedCustomer.getId());
+    request.setAgentId(savedAgent.getId());
     request.setOrderedBy("tester");
 
     FreightOrder order = freightOrderService.createOrder(request);

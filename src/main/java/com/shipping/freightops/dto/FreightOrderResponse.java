@@ -64,6 +64,7 @@ public class FreightOrderResponse {
   public String getAgentName() {
     return agentName;
   }
+
   public String getCustomerName() {
     return customerName;
   }
@@ -104,4 +105,3 @@ public class FreightOrderResponse {
     return discountReason;
   }
 }
-
