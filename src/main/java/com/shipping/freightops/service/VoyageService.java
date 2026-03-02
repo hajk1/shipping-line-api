@@ -1,19 +1,29 @@
 package com.shipping.freightops.service;
 
+import com.shipping.freightops.dto.AgentCommissionResponse;
 import com.shipping.freightops.dto.CreateVoyageRequest;
+import com.shipping.freightops.dto.VoyageCommissionReportResponse;
 import com.shipping.freightops.dto.VoyagePriceRequest;
+import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.Port;
 import com.shipping.freightops.entity.Vessel;
 import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.entity.VoyagePrice;
+import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.enums.VoyageStatus;
+import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.PortRepository;
 import com.shipping.freightops.repository.VesselRepository;
 import com.shipping.freightops.repository.VoyagePriceRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -27,6 +37,7 @@ public class VoyageService {
   private final VesselRepository vesselRepository;
   private final PortRepository portRepository;
   private final VoyagePriceRepository voyagePriceRepository;
+  private final FreightOrderRepository freightOrderRepository;
 
   private Voyage mapCreateVoyageRequestToVoyage(CreateVoyageRequest voyageRequest) {
     Voyage voyage = new Voyage();
@@ -64,11 +75,13 @@ public class VoyageService {
       VoyageRepository voyageRepository,
       VesselRepository vesselRepository,
       PortRepository portRepository,
-      VoyagePriceRepository voyagePriceRepository) {
+      VoyagePriceRepository voyagePriceRepository,
+      FreightOrderRepository freightOrderRepository) {
     this.voyageRepository = voyageRepository;
     this.vesselRepository = vesselRepository;
     this.portRepository = portRepository;
     this.voyagePriceRepository = voyagePriceRepository;
+    this.freightOrderRepository = freightOrderRepository;
   }
 
   public List<Voyage> getAll() {
@@ -134,5 +147,61 @@ public class VoyageService {
       throw new IllegalArgumentException("Voyage not found");
     }
     return voyagePriceRepository.findByVoyageId(voyageId, pageable);
+  }
+
+  @Transactional(readOnly = true)
+  public VoyageCommissionReportResponse calculateCommissions(Long voyageId) {
+    Voyage voyage =
+        voyageRepository
+            .findById(voyageId)
+            .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
+
+    if (voyage.getStatus() != VoyageStatus.COMPLETED) {
+      throw new IllegalStateException("Commission report is only available for COMPLETED voyages");
+    }
+
+    List<FreightOrder> deliveredOrders =
+        freightOrderRepository.findByVoyageIdAndStatus(voyageId, OrderStatus.DELIVERED);
+
+    // Group orders by agent id, preserving insertion order
+    Map<Long, List<FreightOrder>> byAgent = new LinkedHashMap<>();
+    for (FreightOrder order : deliveredOrders) {
+      Long agentId = order.getAgent().getId();
+      byAgent.computeIfAbsent(agentId, k -> new ArrayList<>()).add(order);
+    }
+
+    List<AgentCommissionResponse> agentResponses = new ArrayList<>();
+    BigDecimal totalCommissions = BigDecimal.ZERO;
+
+    for (List<FreightOrder> orders : byAgent.values()) {
+      var agent = orders.get(0).getAgent();
+
+      BigDecimal totalValue =
+          orders.stream().map(FreightOrder::getFinalPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      BigDecimal commissionEarned =
+          agent
+              .getCommissionPercent()
+              .divide(BigDecimal.valueOf(100))
+              .multiply(totalValue)
+              .setScale(2, RoundingMode.HALF_UP);
+
+      AgentCommissionResponse agentDto = new AgentCommissionResponse();
+      agentDto.setAgentName(agent.getName());
+      agentDto.setType(agent.getType());
+      agentDto.setCommissionPercent(agent.getCommissionPercent());
+      agentDto.setOrderCount(orders.size());
+      agentDto.setTotalOrderValueUsd(totalValue.setScale(2, RoundingMode.HALF_UP));
+      agentDto.setCommissionEarnedUsd(commissionEarned);
+
+      agentResponses.add(agentDto);
+      totalCommissions = totalCommissions.add(commissionEarned);
+    }
+
+    VoyageCommissionReportResponse response = new VoyageCommissionReportResponse();
+    response.setVoyageNumber(voyage.getVoyageNumber());
+    response.setAgents(agentResponses);
+    response.setTotalCommissionsUsd(totalCommissions.setScale(2, RoundingMode.HALF_UP));
+    return response;
   }
 }

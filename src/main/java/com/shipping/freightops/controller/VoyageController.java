@@ -110,4 +110,16 @@ public class VoyageController {
     Page<VoyagePriceResponse> mapped = voyagePrices.map(VoyagePriceResponse::fromEntity);
     return ResponseEntity.ok(PageResponse.from(mapped));
   }
+
+  @Operation(summary = "Get commission report for a completed voyage")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Commission report retrieved"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found"),
+    @ApiResponse(responseCode = "409", description = "Voyage is not in COMPLETED status")
+  })
+  @GetMapping("/{voyageId}/commissions")
+  public ResponseEntity<VoyageCommissionReportResponse> getCommissions(
+      @PathVariable Long voyageId) {
+    return ResponseEntity.ok(voyageService.calculateCommissions(voyageId));
+  }
 }
