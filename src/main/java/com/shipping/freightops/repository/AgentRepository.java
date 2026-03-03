@@ -11,4 +11,6 @@ public interface AgentRepository extends JpaRepository<Agent, Long> {
   List<Agent> findByType(AgentType type);
 
   List<Agent> findByActive(boolean active);
+
+  boolean existsByEmail(String email);
 }

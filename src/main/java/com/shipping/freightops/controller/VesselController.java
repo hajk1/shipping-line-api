@@ -7,6 +7,9 @@ import com.shipping.freightops.service.VesselService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +23,12 @@ public class VesselController {
     this.service = service;
   }
 
-  /** Create a new vessel. */
+  @Operation(summary = "Create a new vessel")
+  @ApiResponses({
+    @ApiResponse(responseCode = "201", description = "Vessel successfully created"),
+    @ApiResponse(responseCode = "400", description = "Invalid input data"),
+    @ApiResponse(responseCode = "409", description = "Vessel with this IMO number already exists")
+  })
   @PostMapping
   public ResponseEntity<VesselResponse> create(@Valid @RequestBody CreateVesselRequest request) {
     Vessel vessel = service.createVessel(request);
@@ -29,7 +37,10 @@ public class VesselController {
     return ResponseEntity.created(location).body(body);
   }
 
-  /** List all vessels. */
+  @Operation(summary = "List all vessels")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "List of vessels retrieved successfully")
+  })
   @GetMapping
   public ResponseEntity<List<VesselResponse>> list() {
     List<Vessel> vessels = service.getAllVessels();
@@ -38,7 +49,11 @@ public class VesselController {
     return ResponseEntity.ok(body);
   }
 
-  /** Get a vessel by its ID. */
+  @Operation(summary = "Get vessel by ID")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Vessel found"),
+    @ApiResponse(responseCode = "404", description = "Vessel not found")
+  })
   @GetMapping("/{id}")
   public ResponseEntity<VesselResponse> getById(@PathVariable Long id) {
     Vessel vessel = service.getVessel(id);

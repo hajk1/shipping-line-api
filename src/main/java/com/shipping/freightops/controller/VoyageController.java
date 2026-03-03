@@ -56,7 +56,7 @@ public class VoyageController {
     @ApiResponse(responseCode = "404", description = "Vessel or Port not found")
   })
   @PostMapping
-  public ResponseEntity<VoyageResponse> addVoyage(@RequestBody CreateVoyageRequest voyageRequest) {
+  public ResponseEntity<VoyageResponse> addVoyage(@Valid @RequestBody CreateVoyageRequest voyageRequest) {
     Voyage voyage = voyageService.addVoyage(voyageRequest);
     VoyageResponse response = new VoyageResponse(voyage);
     return ResponseEntity.created(URI.create("/api/v1/voyages")).body(response);
@@ -121,5 +121,5 @@ public class VoyageController {
   public ResponseEntity<VoyageCommissionReportResponse> getCommissions(
       @PathVariable Long voyageId) {
     return ResponseEntity.ok(voyageService.calculateCommissions(voyageId));
-  }
+}
 }

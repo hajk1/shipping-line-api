@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,7 +33,12 @@ public class AgentController {
     this.agentService = agentService;
   }
 
-  /** Create a new agent. */
+  @Operation(summary = "Create a new agent")
+  @ApiResponses({
+    @ApiResponse(responseCode = "201", description = "Agent successfully created"),
+    @ApiResponse(responseCode = "400", description = "Invalid input data"),
+    @ApiResponse(responseCode = "409", description = "Agent with this email already exists")
+  })
   @PostMapping
   public ResponseEntity<AgentResponse> create(@Valid @RequestBody AgentCreateRequest request) {
     Agent agent = agentService.createAgent(request);
@@ -39,7 +47,10 @@ public class AgentController {
     return ResponseEntity.created(location).body(body);
   }
 
-  /** List all agents, with optional type and active filters. */
+  @Operation(summary = "List all agents with optional type and active filters")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "List of agents retrieved successfully")
+  })
   @GetMapping
   public ResponseEntity<List<AgentResponse>> list(
       @RequestParam(required = false) AgentType type,
@@ -49,14 +60,23 @@ public class AgentController {
     return ResponseEntity.ok(body);
   }
 
-  /** Get a single agent by ID. */
+  @Operation(summary = "Get agent by ID")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Agent found"),
+    @ApiResponse(responseCode = "404", description = "Agent not found")
+  })
   @GetMapping("/{id}")
   public ResponseEntity<AgentResponse> getById(@PathVariable Long id) {
     Agent agent = agentService.getAgent(id);
     return ResponseEntity.ok(toResponse(agent));
   }
 
-  /** Partial update: commissionPercent and/or active. */
+  @Operation(summary = "Update agent commission percent or active status")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Agent updated successfully"),
+    @ApiResponse(responseCode = "400", description = "Invalid input data"),
+    @ApiResponse(responseCode = "404", description = "Agent not found")
+  })
   @PatchMapping("/{id}")
   public ResponseEntity<AgentResponse> update(
       @PathVariable Long id, @Valid @RequestBody AgentUpdateRequest request) {

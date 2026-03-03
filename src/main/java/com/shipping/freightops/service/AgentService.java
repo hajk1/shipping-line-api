@@ -21,6 +21,9 @@ public class AgentService {
 
   @Transactional
   public Agent createAgent(AgentCreateRequest request) {
+    if (agentRepository.existsByEmail(request.getEmail())) {
+      throw new IllegalStateException("Agent with this email already exists: " + request.getEmail());
+    }
     Agent agent = new Agent();
     agent.setName(request.getName());
     agent.setEmail(request.getEmail());
