@@ -30,5 +30,13 @@ public interface FreightOrderRepository extends JpaRepository<FreightOrder, Long
 """)
   int sumTeuByVoyageId(@Param("voyageId") Long voyageId);
 
+  @Query(
+"""
+    SELECT fo
+    FROM FreightOrder fo
+    JOIN fo.container c
+    WHERE c.containerCode = :containerCode
+
+""")
   List<FreightOrder> findByContainerCode(String containerCode);
 }
