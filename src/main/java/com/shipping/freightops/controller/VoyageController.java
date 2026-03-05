@@ -3,6 +3,7 @@ package com.shipping.freightops.controller;
 import com.shipping.freightops.dto.*;
 import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.Voyage;
+import com.shipping.freightops.entity.VoyageCost;
 import com.shipping.freightops.entity.VoyagePrice;
 import com.shipping.freightops.enums.VoyageStatus;
 import com.shipping.freightops.service.FreightOrderService;
@@ -127,6 +128,45 @@ public class VoyageController {
     Page<VoyagePrice> voyagePrices = voyageService.getAllPricesByVoyageId(voyageId, pageable);
     Page<VoyagePriceResponse> mapped = voyagePrices.map(VoyagePriceResponse::fromEntity);
     return ResponseEntity.ok(PageResponse.from(mapped));
+  }
+
+  @Operation(summary = "Create a cost line item for a voyage")
+  @ApiResponses({
+    @ApiResponse(responseCode = "201", description = "Voyage cost created"),
+    @ApiResponse(responseCode = "400", description = "Invalid input"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found")
+  })
+  @PostMapping("/{voyageId}/costs")
+  public ResponseEntity<VoyageCostResponse> addVoyageCost(
+      @PathVariable Long voyageId, @Valid @RequestBody CreateVoyageCostRequest request) {
+    var voyageCost = voyageService.addVoyageCost(voyageId, request);
+    return ResponseEntity.created(
+            URI.create("/api/v1/voyages/" + voyageId + "/costs/" + voyageCost.getId()))
+        .body(VoyageCostResponse.fromEntity(voyageCost));
+  }
+
+  @Operation(summary = "List all cost line items for a voyage")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Voyage costs retrieved"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found")
+  })
+  @GetMapping("/{voyageId}/costs")
+  public ResponseEntity<List<VoyageCostResponse>> getVoyageCosts(@PathVariable Long voyageId) {
+    List<VoyageCost> voyageCosts = voyageService.getVoyageCosts(voyageId);
+    List<VoyageCostResponse> response =
+        voyageCosts.stream().map(VoyageCostResponse::fromEntity).toList();
+    return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "Get financial summary for a completed voyage")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Financial summary retrieved"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found"),
+    @ApiResponse(responseCode = "409", description = "Voyage is not completed")
+  })
+  @GetMapping("/{voyageId}/financial-summary")
+  public ResponseEntity<FinancialSummaryResponse> getFinancialSummary(@PathVariable Long voyageId) {
+    return ResponseEntity.ok(voyageService.getFinancialSummary(voyageId));
   }
 
   @Operation(summary = "Get load summary for a voyage")

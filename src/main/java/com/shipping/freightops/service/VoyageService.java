@@ -1,13 +1,18 @@
 package com.shipping.freightops.service;
 
 import com.shipping.freightops.dto.BookingStatusUpdateRequest;
+import com.shipping.freightops.dto.CreateVoyageCostRequest;
 import com.shipping.freightops.dto.CreateVoyageRequest;
+import com.shipping.freightops.dto.FinancialSummaryResponse;
+import com.shipping.freightops.dto.OwnerFinancialShareResponse;
 import com.shipping.freightops.dto.VoyagePriceRequest;
 import com.shipping.freightops.entity.*;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.enums.VoyageStatus;
 import com.shipping.freightops.repository.*;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -24,6 +29,8 @@ public class VoyageService {
   private final PortRepository portRepository;
   private final VoyagePriceRepository voyagePriceRepository;
   private final FreightOrderRepository orderRepository;
+  private final VoyageCostRepository voyageCostRepository;
+  private final VesselOwnerRepository vesselOwnerRepository;
 
   private Voyage mapCreateVoyageRequestToVoyage(CreateVoyageRequest voyageRequest) {
     Voyage voyage = new Voyage();
@@ -64,12 +71,16 @@ public class VoyageService {
       VesselRepository vesselRepository,
       PortRepository portRepository,
       VoyagePriceRepository voyagePriceRepository,
-      FreightOrderRepository orderRepository) {
+      FreightOrderRepository orderRepository,
+      VoyageCostRepository voyageCostRepository,
+      VesselOwnerRepository vesselOwnerRepository) {
     this.voyageRepository = voyageRepository;
     this.vesselRepository = vesselRepository;
     this.portRepository = portRepository;
     this.voyagePriceRepository = voyagePriceRepository;
     this.orderRepository = orderRepository;
+    this.voyageCostRepository = voyageCostRepository;
+    this.vesselOwnerRepository = vesselOwnerRepository;
   }
 
   public List<Voyage> getAll() {
@@ -155,5 +166,79 @@ public class VoyageService {
             .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
     voyage.setBookingOpen(request.isBookingOpen());
     return voyageRepository.save(voyage);
+  }
+
+  @Transactional
+  public VoyageCost addVoyageCost(Long voyageId, @Valid CreateVoyageCostRequest request) {
+    Voyage voyage =
+        voyageRepository
+            .findById(voyageId)
+            .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
+    VoyageCost voyageCost = new VoyageCost();
+    voyageCost.setVoyage(voyage);
+    voyageCost.setDescription(request.getDescription());
+    voyageCost.setAmountUsd(request.getAmountUsd());
+    return voyageCostRepository.save(voyageCost);
+  }
+
+  @Transactional(readOnly = true)
+  public List<VoyageCost> getVoyageCosts(Long voyageId) {
+    if (!voyageRepository.existsById(voyageId)) {
+      throw new IllegalArgumentException("Voyage not found");
+    }
+    return voyageCostRepository.findByVoyageIdOrderByCreatedAtAsc(voyageId);
+  }
+
+  @Transactional(readOnly = true)
+  public FinancialSummaryResponse getFinancialSummary(Long voyageId) {
+    Voyage voyage =
+        voyageRepository
+            .findById(voyageId)
+            .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
+
+    if (voyage.getStatus() != VoyageStatus.COMPLETED) {
+      throw new IllegalStateException(
+          "Financial summary can only be generated for completed voyages");
+    }
+
+    List<FreightOrder> deliveredOrders =
+        orderRepository.findByVoyageIdAndStatus(voyageId, OrderStatus.DELIVERED);
+    List<VoyageCost> costs = voyageCostRepository.findByVoyageIdOrderByCreatedAtAsc(voyageId);
+    List<VesselOwner> owners = vesselOwnerRepository.findByVesselId(voyage.getVessel().getId());
+
+    BigDecimal totalRevenue =
+        deliveredOrders.stream()
+            .map(FreightOrder::getFinalPrice)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalCosts =
+        costs.stream().map(VoyageCost::getAmountUsd).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal netProfit = totalRevenue.subtract(totalCosts);
+
+    List<OwnerFinancialShareResponse> ownerBreakdown =
+        owners.stream()
+            .map(owner -> mapOwnerSummary(owner, totalRevenue, totalCosts, netProfit))
+            .toList();
+
+    return FinancialSummaryResponse.fromValues(
+        voyage.getVoyageNumber(),
+        totalRevenue,
+        totalCosts,
+        netProfit,
+        deliveredOrders.size(),
+        ownerBreakdown);
+  }
+
+  private OwnerFinancialShareResponse mapOwnerSummary(
+      VesselOwner owner, BigDecimal totalRevenue, BigDecimal totalCosts, BigDecimal netProfit) {
+    return OwnerFinancialShareResponse.fromValues(
+        owner.getOwnerName(),
+        owner.getSharePercent(),
+        applyShare(totalRevenue, owner.getSharePercent()),
+        applyShare(totalCosts, owner.getSharePercent()),
+        applyShare(netProfit, owner.getSharePercent()));
+  }
+
+  private BigDecimal applyShare(BigDecimal amount, BigDecimal sharePercent) {
+    return amount.multiply(sharePercent).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
   }
 }

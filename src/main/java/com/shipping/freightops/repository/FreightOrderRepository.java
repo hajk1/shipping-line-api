@@ -21,6 +21,8 @@ public interface FreightOrderRepository extends JpaRepository<FreightOrder, Long
 
   List<FreightOrder> findByVoyageIdAndStatusIn(Long voyageId, List<OrderStatus> statuses);
 
+  List<FreightOrder> findByVoyageIdAndStatus(Long voyageId, OrderStatus status);
+
   @Query(
 """
     SELECT COALESCE(SUM(c.teu), 0)
