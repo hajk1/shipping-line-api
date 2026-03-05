@@ -23,6 +23,7 @@ public class ContainerTrackingResponse {
             .filter(order -> order.getVoyage() != null)
             .map(order -> VoyageTrackingResponse.fromEntity(order.getVoyage()))
             .toList();
+    dto.voyages.sort((v1, v2) -> v1.getDepartureTime().compareTo(v2.getDepartureTime()));
     return dto;
   }
 
