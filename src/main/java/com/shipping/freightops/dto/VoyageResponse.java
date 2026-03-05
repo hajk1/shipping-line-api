@@ -1,6 +1,7 @@
 package com.shipping.freightops.dto;
 
 import com.shipping.freightops.entity.Voyage;
+import com.shipping.freightops.enums.VoyageStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,9 @@ public class VoyageResponse {
   private String arrivalPortName;
   private LocalDateTime departureTime;
   private LocalDateTime arrivalTime;
+  private boolean bookingOpen;
+  private int maxCapacityTeu;
+  private VoyageStatus status;
 
   // voyage response format
   public VoyageResponse(Voyage voyage) {
@@ -21,6 +25,9 @@ public class VoyageResponse {
     arrivalPortName = voyage.getArrivalPort().getName();
     departureTime = voyage.getDepartureTime();
     arrivalTime = voyage.getArrivalTime();
+    bookingOpen = voyage.isBookingOpen();
+    maxCapacityTeu = voyage.getMaxCapacityTeu();
+    status = voyage.getStatus();
   }
 
   // List of voyage response format
@@ -81,5 +88,29 @@ public class VoyageResponse {
 
   public void setArrivalDate(LocalDateTime departureTime) {
     this.arrivalTime = arrivalTime;
+  }
+
+  public boolean isBookingOpen() {
+    return bookingOpen;
+  }
+
+  public void setBookingOpen(boolean bookingOpen) {
+    this.bookingOpen = bookingOpen;
+  }
+
+  public int getMaxCapacityTeu() {
+    return maxCapacityTeu;
+  }
+
+  public void setMaxCapacityTeu(int maxCapacityTeu) {
+    this.maxCapacityTeu = maxCapacityTeu;
+  }
+
+  public VoyageStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(VoyageStatus status) {
+    this.status = status;
   }
 }

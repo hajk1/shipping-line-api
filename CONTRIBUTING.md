@@ -11,9 +11,9 @@
 ## Workflow
 
 1. **Assign yourself** to the issue so others know it's taken
-2. **Create a feature branch** from `main`:
+2. **Create a feature branch** from `master`:
    ```bash
-   git checkout main
+   git checkout master
    git pull
    git checkout -b feature/CRD-001-port-crud
    ```

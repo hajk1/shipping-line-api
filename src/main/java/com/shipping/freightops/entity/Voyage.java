@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 
 /** A scheduled trip of a vessel from one port to another. */
@@ -47,6 +48,12 @@ public class Voyage extends BaseEntity {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private VoyageStatus status = VoyageStatus.PLANNED;
+
+  @Positive
+  @Column(nullable = false)
+  private int maxCapacityTeu;
+
+  @Column private boolean bookingOpen;
 
   public Voyage() {}
 
@@ -104,5 +111,21 @@ public class Voyage extends BaseEntity {
 
   public void setStatus(VoyageStatus status) {
     this.status = status;
+  }
+
+  public int getMaxCapacityTeu() {
+    return maxCapacityTeu;
+  }
+
+  public void setMaxCapacityTeu(int maxCapacityTeu) {
+    this.maxCapacityTeu = maxCapacityTeu;
+  }
+
+  public boolean isBookingOpen() {
+    return bookingOpen;
+  }
+
+  public void setBookingOpen(boolean bookingOpen) {
+    this.bookingOpen = bookingOpen;
   }
 }

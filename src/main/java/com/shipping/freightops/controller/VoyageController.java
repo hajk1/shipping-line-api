@@ -1,9 +1,11 @@
 package com.shipping.freightops.controller;
 
 import com.shipping.freightops.dto.*;
+import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.entity.VoyagePrice;
 import com.shipping.freightops.enums.VoyageStatus;
+import com.shipping.freightops.service.FreightOrderService;
 import com.shipping.freightops.service.VoyageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,9 +24,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/voyages")
 public class VoyageController {
   private final VoyageService voyageService;
+  private final FreightOrderService freightOrderService;
 
-  public VoyageController(VoyageService voyageService) {
+  public VoyageController(VoyageService voyageService, FreightOrderService freightOrderService) {
     this.voyageService = voyageService;
+    this.freightOrderService = freightOrderService;
   }
 
   @Operation(summary = "Get all voyages")
@@ -47,6 +51,20 @@ public class VoyageController {
     Voyage voyage = voyageService.getById(voyageId);
     VoyageResponse response = new VoyageResponse(voyage);
     return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "Get all containers booked on a voyage (paginated)")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Voyage found and containers retrieved"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found")
+  })
+  @GetMapping("/{voyageId}/containers")
+  public ResponseEntity<PageResponse<VoyageContainerResponse>> getAllContainersByVoyageId(
+      @PathVariable Long voyageId, @PageableDefault(size = 20) Pageable pageable) {
+
+    Page<FreightOrder> order = freightOrderService.getOrdersByVoyage(voyageId, pageable);
+    Page<VoyageContainerResponse> containers = order.map(VoyageContainerResponse::fromEntity);
+    return ResponseEntity.ok(PageResponse.from(containers));
   }
 
   @Operation(summary = "Create a new voyage")
@@ -109,5 +127,33 @@ public class VoyageController {
     Page<VoyagePrice> voyagePrices = voyageService.getAllPricesByVoyageId(voyageId, pageable);
     Page<VoyagePriceResponse> mapped = voyagePrices.map(VoyagePriceResponse::fromEntity);
     return ResponseEntity.ok(PageResponse.from(mapped));
+  }
+
+  @Operation(summary = "Get load summary for a voyage")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Voyage load retrieved"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found")
+  })
+  @GetMapping("/{voyageId}/load")
+  public ResponseEntity<LoadSummaryResponse> getLoadSummary(@PathVariable Long voyageId) {
+    Voyage voyage = voyageService.getById(voyageId);
+    List<FreightOrder> orders = voyageService.getActiveOrdersForVoyage(voyageId);
+    int currentLoadTeu = voyageService.calculateCurrentLoadTeu(orders);
+    int containerCount = orders.size();
+
+    return ResponseEntity.ok(
+        LoadSummaryResponse.fromEntity(voyage, currentLoadTeu, containerCount));
+  }
+
+  @Operation(summary = "Update voyage status")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Voyage status updated"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found")
+  })
+  @PatchMapping("/{voyageId}/booking-status")
+  public ResponseEntity<VoyageResponse> updateBookingStatus(
+      @PathVariable Long voyageId, @RequestBody BookingStatusUpdateRequest request) {
+    Voyage voyage = voyageService.updateBookingStatus(voyageId, request);
+    return ResponseEntity.ok(new VoyageResponse(voyage));
   }
 }

@@ -96,7 +96,6 @@ Customers stay informed throughout the shipment lifecycle. Builds the notificati
 lifecycle emails.
 
 **Issues:**
-
 - `NTF-001` — Notification template engine
 - `NTF-002` — Booking confirmation and cancellation notices
 - `NTF-003` — Departure notice
@@ -105,7 +104,6 @@ lifecycle emails.
 - `NTF-006` — Voyage delay alert
 
 **Release criteria:**
-
 - [ ] Reusable notification engine with DB-stored templates
 - [ ] Automatic emails on: booking confirmed, cancelled, departed, arriving soon, delivered
 - [ ] Delay alerts when voyage arrival time is pushed
@@ -248,13 +246,13 @@ _Not yet broken into issues. This is the vision for what a production release wo
 
 | Branch            | Purpose                              |
 |-------------------|--------------------------------------|
-| `main`            | Latest stable release                |
+| `master`          | Latest stable release                |
 | `develop`         | Integration branch for next version  |
 | `feature/XXX-NNN` | Individual issue work                |
 | `release/0.X.0`   | Release stabilization before tagging |
 
 **Flow:** `feature/XXX-NNN` → PR to `develop` → when version is complete, `develop` → PR to
-`release/0.X.0` → tag → merge to `main`
+`release/0.X.0` → tag → merge to `master`
 
 ---
 

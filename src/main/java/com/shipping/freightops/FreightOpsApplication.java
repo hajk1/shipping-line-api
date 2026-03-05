@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 /** Freight Operations API - Shipping Line POC. */
 @SpringBootApplication
@@ -14,6 +15,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
             version = "0.1.0",
             description =
                 "API for managing freight orders, voyages, containers, vessels, and ports"))
+@ConfigurationPropertiesScan
 public class FreightOpsApplication {
 
   public static void main(String[] args) {
