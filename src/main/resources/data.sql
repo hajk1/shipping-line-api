@@ -13,10 +13,12 @@ VALUES ('MV Freight Star', '1234567', 5000, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- Containers
-INSERT INTO containers (container_code, size, type, created_at, updated_at)
-VALUES ('MSCU1234567', 'TWENTY_FOOT', 'DRY', NOW(), NOW()),
-       ('MSCU7654321', 'FORTY_FOOT', 'REEFER', NOW(), NOW()),
-       ('HLCU9988776', 'TWENTY_FOOT', 'OPEN_TOP', NOW(), NOW())
+INSERT INTO containers
+(container_code, size, type, teu, created_at, updated_at)
+VALUES
+    ('MSCU1234567', 'TWENTY_FOOT', 'DRY', 1, NOW(), NOW()),
+    ('MSCU7654321', 'FORTY_FOOT', 'REEFER', 2, NOW(), NOW()),
+    ('HLCU9988776', 'TWENTY_FOOT', 'OPEN_TOP', 1, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- Agents
