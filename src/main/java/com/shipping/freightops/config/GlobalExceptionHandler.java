@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 
 /** Translates exceptions into consistent JSON error responses. */
 @RestControllerAdvice
@@ -37,6 +39,21 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(BadRequestException.class)
   public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex) {
     return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+  }
+
+  @ExceptionHandler(HttpClientErrorException.class)
+  public ResponseEntity<Map<String, Object>> handleHttpClientError(HttpClientErrorException ex) {
+    HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+    if (status == null) {
+      status = HttpStatus.INTERNAL_SERVER_ERROR; // fallback
+    }
+    String message = ex.getResponseBodyAsString();
+    return buildError(status, message);
+  }
+
+  @ExceptionHandler(RestClientException.class)
+  public ResponseEntity<Map<String, Object>> handleRestClientException(RestClientException ex) {
+    return buildError(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
   }
 
   private ResponseEntity<Map<String, Object>> buildError(HttpStatus status, String message) {
