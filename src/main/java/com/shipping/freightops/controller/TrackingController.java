@@ -17,9 +17,9 @@ public class TrackingController {
 
   private TrackingService trackingService;
 
-    public TrackingController(TrackingService trackingService) {
-        this.trackingService = trackingService;
-    }
+  public TrackingController(TrackingService trackingService) {
+    this.trackingService = trackingService;
+  }
 
   @GetMapping("/order/{orderId}")
   public ResponseEntity<OrderTrackingResponse> trackOrder(@PathVariable Long orderId) {

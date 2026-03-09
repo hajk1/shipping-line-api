@@ -3,7 +3,6 @@ package com.shipping.freightops.dto;
 import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,10 +20,11 @@ public class ContainerTrackingResponse {
     dto.containerSize = firstOrder.getContainer().getSize();
     dto.containerType = firstOrder.getContainer().getType();
     dto.voyages =
-            new ArrayList<>(orders.stream()
-                    .filter(order -> order.getVoyage() != null)
-                    .map(order -> VoyageTrackingResponse.fromEntity(order.getVoyage()))
-                    .toList());
+        new ArrayList<>(
+            orders.stream()
+                .filter(order -> order.getVoyage() != null)
+                .map(order -> VoyageTrackingResponse.fromEntity(order.getVoyage()))
+                .toList());
     dto.voyages.sort((v1, v2) -> v1.getDepartureTime().compareTo(v2.getDepartureTime()));
 
     return dto;
