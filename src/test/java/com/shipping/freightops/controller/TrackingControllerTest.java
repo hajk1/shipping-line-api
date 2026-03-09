@@ -53,7 +53,7 @@ public class TrackingControllerTest {
     // Setup test data for tracking tests
     Port departurePort = portRepository.save(new Port("AEJEA", "Jebel Ali", "UAE"));
     Port arrivalPort = portRepository.save(new Port("CNSHA", "Shanghai", "China"));
-    Vessel vessel = vesselRepository.save(new Vessel("MV Test", "9999999", 3000));
+    Vessel vessel = vesselRepository.save(new Vessel("MV Test", "1111111", 3000));
     Agent agent = new Agent();
     agent.setName("Test Agent");
     agent.setEmail("a@agent.com");
