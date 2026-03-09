@@ -49,3 +49,6 @@ Map<Long, Long> countByVoyageIds(@Param("ids") List<Long> ids);
     WHERE c.containerCode = :containerCode
     """)
 List<FreightOrder> findByContainerCode(@Param("containerCode") String containerCode);
+  
+}
+
