@@ -26,21 +26,26 @@ public interface FreightOrderRepository extends JpaRepository<FreightOrder, Long
 
   List<FreightOrder> findByVoyageIdAndStatus(Long voyageId, OrderStatus status);
 
-  @Query(
-"""
+@Query("""
     SELECT COALESCE(SUM(c.teu), 0)
     FROM FreightOrder fo
     JOIN fo.container c
     WHERE fo.voyage.id = :voyageId
-""")
-  int sumTeuByVoyageId(@Param("voyageId") Long voyageId);
+    """)
+int sumTeuByVoyageId(@Param("voyageId") Long voyageId);
 
-  @Query(
-      """
-      SELECT f.voyage.id, COUNT(f)
-      FROM FreightOrder f
-      WHERE f.voyage.id IN :ids
-      GROUP BY f.voyage.id
-      """)
-  Map<Long, Long> countByVoyageIds(@Param("ids") List<Long> ids);
-}
+@Query("""
+    SELECT f.voyage.id, COUNT(f)
+    FROM FreightOrder f
+    WHERE f.voyage.id IN :ids
+    GROUP BY f.voyage.id
+    """)
+Map<Long, Long> countByVoyageIds(@Param("ids") List<Long> ids);
+
+@Query("""
+    SELECT fo
+    FROM FreightOrder fo
+    JOIN fo.container c
+    WHERE c.containerCode = :containerCode
+    """)
+List<FreightOrder> findByContainerCode(@Param("containerCode") String containerCode);
