@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "suggestedPriceLowUsd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "suggestedPriceHighUsd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "confidence": {
+      "type": "string",
+      "enum": []
+    },
+    "reasoning": {
+      "type": "string"
+    },
+    "dataPoints": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "historicalAvgUsd": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "historicalMinUsd": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "historicalMaxUsd": {
+      "type": ["number", "null"],
+      "minimum": 0
+    }
+  },
+  "required": [
+    "suggestedPriceLowUsd",
+    "suggestedPriceHighUsd",
+    "confidence",
+    "reasoning",
+    "dataPoints"
+  ],
+  "additionalProperties": false
+}
