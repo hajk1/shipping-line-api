@@ -156,19 +156,14 @@ public class PriceSuggestionService {
   }
 
   private String buildPrompt(
-      String route,
-      ContainerSize containerSize,
-      List<VoyagePrice> historicalPrices) {
-    List<Long> voyageIds =
-        historicalPrices.stream().map(vp -> vp.getVoyage().getId()).toList();
+      String route, ContainerSize containerSize, List<VoyagePrice> historicalPrices) {
+    List<Long> voyageIds = historicalPrices.stream().map(vp -> vp.getVoyage().getId()).toList();
 
     Map<Long, Long> orderCounts = freightOrderRepository.countByVoyageIds(voyageIds);
 
     StringBuilder sb = new StringBuilder();
     sb.append("Route: ").append(route).append("\n");
-    sb.append("Container size for which to suggest price: ")
-        .append(containerSize)
-        .append("\n\n");
+    sb.append("Container size for which to suggest price: ").append(containerSize).append("\n\n");
     sb.append("Historical data:\n");
     sb.append("voyageNumber | departureDate | priceUsd | orderCount | containerSize\n");
     sb.append("-------------|---------------|----------|------------|---------------\n");
