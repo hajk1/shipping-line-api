@@ -12,7 +12,6 @@ import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.entity.VoyagePrice;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.PriceSuggestionConfidence;
-import com.shipping.freightops.prompt.PriceSuggestionPrompts;
 import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.PortRepository;
 import com.shipping.freightops.repository.VoyagePriceRepository;
@@ -25,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -63,11 +63,18 @@ public class PriceSuggestionService {
     this.objectMapper = objectMapper;
     try {
       this.schemaJson = schemaBuilder.build();
-      this.systemPrompt = PriceSuggestionPrompts.PRICE_SUGGESTION_SYSTEM;
+      this.systemPrompt = loadSystemPrompt();
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to load price suggestion schema", e);
+      throw new IllegalStateException("Failed to load price suggestion resources", e);
     }
     this.jsonSchema = createJsonSchema();
+  }
+
+  private String loadSystemPrompt() throws IOException {
+    try (var inputStream =
+        new ClassPathResource("prompts/price-suggestion-system.txt").getInputStream()) {
+      return new String(inputStream.readAllBytes());
+    }
   }
 
   private JsonSchema createJsonSchema() {
