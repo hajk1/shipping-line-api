@@ -161,11 +161,19 @@ public class PriceSuggestionService {
     return voyage.getDeparturePort().getName() + " → " + voyage.getArrivalPort().getName();
   }
 
+  private Map<Long, Long> toOrderCountMap(List<Object[]> rows) {
+    return rows.stream()
+        .collect(
+            Collectors.toMap(
+                row -> (Long) row[0],
+                row -> ((Number) row[1]).longValue()));
+  }
+
   private String buildPrompt(
       String route, ContainerSize containerSize, List<VoyagePrice> historicalPrices) {
     List<Long> voyageIds = historicalPrices.stream().map(vp -> vp.getVoyage().getId()).toList();
-
-    Map<Long, Long> orderCounts = freightOrderRepository.countByVoyageIds(voyageIds);
+    Map<Long, Long> orderCounts =
+        toOrderCountMap(freightOrderRepository.countByVoyageIds(voyageIds));
 
     StringBuilder sb = new StringBuilder();
     sb.append("Route: ").append(route).append("\n");
