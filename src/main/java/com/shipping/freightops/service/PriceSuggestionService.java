@@ -12,6 +12,7 @@ import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.entity.VoyagePrice;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.PriceSuggestionConfidence;
+import com.shipping.freightops.prompt.PriceSuggestionPrompts;
 import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.PortRepository;
 import com.shipping.freightops.repository.VoyagePriceRepository;
@@ -42,6 +43,7 @@ public class PriceSuggestionService {
   private final ObjectMapper objectMapper;
   private final String schemaJson;
   private final JsonSchema jsonSchema;
+  private final String systemPrompt;
 
   public PriceSuggestionService(
       VoyageRepository voyageRepository,
@@ -59,6 +61,7 @@ public class PriceSuggestionService {
     this.objectMapper = objectMapper;
     try {
       this.schemaJson = schemaBuilder.build();
+      this.systemPrompt = PriceSuggestionPrompts.PRICE_SUGGESTION_SYSTEM;
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load price suggestion schema", e);
     }
@@ -121,12 +124,6 @@ public class PriceSuggestionService {
     }
 
     String prompt = buildPrompt(route, containerSize, historicalPrices);
-    String systemPrompt =
-        """
-        You are a freight pricing analyst. Suggest a price range based on the historical data provided.
-        Respond with JSON only, matching the schema. Use confidence levels: HIGH (10+ data points, same route),
-        MEDIUM (3-9 data points or similar routes), LOW (fewer than 3 data points, set confidence to LOW and note insufficient data).
-        Explain your reasoning in 2-3 sentences.""";
 
     try {
       String rawResponse = aiClient.completeWithSchema(systemPrompt, prompt, schemaJson);
