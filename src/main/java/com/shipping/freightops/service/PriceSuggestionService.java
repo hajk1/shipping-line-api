@@ -26,8 +26,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PriceSuggestionService {
@@ -78,7 +80,7 @@ public class PriceSuggestionService {
     Voyage voyage =
         voyageRepository
             .findById(voyageId)
-            .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Voyage not found"));
 
     String route = buildRoute(voyage);
     PageRequest pageRequest = PageRequest.of(0, MAX_HISTORICAL_VOYAGES);
