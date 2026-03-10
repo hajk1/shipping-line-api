@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface FreightOrderRepository extends JpaRepository<FreightOrder, Long> {
 
+  long countByVoyageId(Long voyageId);
+
   Page<FreightOrder> findByVoyageId(Long voyageId, Pageable pageable);
 
   Page<FreightOrder> findByStatus(OrderStatus status, Pageable pageable);
@@ -24,21 +26,29 @@ public interface FreightOrderRepository extends JpaRepository<FreightOrder, Long
   List<FreightOrder> findByVoyageIdAndStatus(Long voyageId, OrderStatus status);
 
   @Query(
-"""
+      """
     SELECT COALESCE(SUM(c.teu), 0)
     FROM FreightOrder fo
     JOIN fo.container c
     WHERE fo.voyage.id = :voyageId
-""")
+    """)
   int sumTeuByVoyageId(@Param("voyageId") Long voyageId);
 
   @Query(
-"""
+      """
+    SELECT f.voyage.id, COUNT(f)
+    FROM FreightOrder f
+    WHERE f.voyage.id IN :ids
+    GROUP BY f.voyage.id
+    """)
+  List<Object[]> countByVoyageIds(@Param("ids") List<Long> ids);
+
+  @Query(
+      """
     SELECT fo
     FROM FreightOrder fo
     JOIN fo.container c
     WHERE c.containerCode = :containerCode
-
-""")
-  List<FreightOrder> findByContainerCode(String containerCode);
+    """)
+  List<FreightOrder> findByContainerCode(@Param("containerCode") String containerCode);
 }

@@ -95,6 +95,12 @@
             <artifactId>pdfbox</artifactId>
             <version>3.0.5</version>
         </dependency>
+        <!-- JSON Schema validation for price suggestion LLM output -->
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>1.0.87</version>
+        </dependency>
     </dependencies>
 
     <build>

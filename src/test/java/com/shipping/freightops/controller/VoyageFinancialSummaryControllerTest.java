@@ -27,6 +27,7 @@ import com.shipping.freightops.repository.PortRepository;
 import com.shipping.freightops.repository.VesselOwnerRepository;
 import com.shipping.freightops.repository.VesselRepository;
 import com.shipping.freightops.repository.VoyageCostRepository;
+import com.shipping.freightops.repository.VoyagePriceRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -48,6 +49,7 @@ class VoyageFinancialSummaryControllerTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private VesselRepository vesselRepository;
   @Autowired private VoyageCostRepository voyageCostRepository;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private ContainerRepository containerRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
   @Autowired private CustomerRepository customerRepository;
@@ -65,6 +67,7 @@ class VoyageFinancialSummaryControllerTest {
   void setUp() {
     freightOrderRepository.deleteAll();
     voyageCostRepository.deleteAll();
+    voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     vesselOwnerRepository.deleteAll();
     containerRepository.deleteAll();

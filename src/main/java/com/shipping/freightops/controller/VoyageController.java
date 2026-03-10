@@ -5,8 +5,10 @@ import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.entity.VoyageCost;
 import com.shipping.freightops.entity.VoyagePrice;
+import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.VoyageStatus;
 import com.shipping.freightops.service.FreightOrderService;
+import com.shipping.freightops.service.PriceSuggestionService;
 import com.shipping.freightops.service.VoyageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,10 +28,15 @@ import org.springframework.web.bind.annotation.*;
 public class VoyageController {
   private final VoyageService voyageService;
   private final FreightOrderService freightOrderService;
+  private final PriceSuggestionService priceSuggestionService;
 
-  public VoyageController(VoyageService voyageService, FreightOrderService freightOrderService) {
+  public VoyageController(
+      VoyageService voyageService,
+      FreightOrderService freightOrderService,
+      PriceSuggestionService priceSuggestionService) {
     this.voyageService = voyageService;
     this.freightOrderService = freightOrderService;
+    this.priceSuggestionService = priceSuggestionService;
   }
 
   @Operation(summary = "Get all voyages")
@@ -167,6 +174,17 @@ public class VoyageController {
   @GetMapping("/{voyageId}/financial-summary")
   public ResponseEntity<FinancialSummaryResponse> getFinancialSummary(@PathVariable Long voyageId) {
     return ResponseEntity.ok(voyageService.getFinancialSummary(voyageId));
+  }
+
+  @Operation(summary = "Get AI-suggested price range for a voyage and container size")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Price suggestion retrieved"),
+    @ApiResponse(responseCode = "404", description = "Voyage not found")
+  })
+  @GetMapping("/{voyageId}/price-suggestion")
+  public ResponseEntity<PriceSuggestionResponse> getPriceSuggestion(
+      @PathVariable Long voyageId, @RequestParam ContainerSize containerSize) {
+    return ResponseEntity.ok(priceSuggestionService.getPriceSuggestion(voyageId, containerSize));
   }
 
   @Operation(summary = "Get load summary for a voyage")
