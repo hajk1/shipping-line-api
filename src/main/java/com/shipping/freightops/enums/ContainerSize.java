@@ -11,4 +11,12 @@ public enum ContainerSize {
       case FORTY_FOOT -> 2;
     };
   }
+
+  // Used for PDF construction, should reflect all values in the enum
+  public String getPdfReadyValue() {
+    return switch (this) {
+      case TWENTY_FOOT -> "20ft";
+      case FORTY_FOOT -> "40ft";
+    };
+  }
 }

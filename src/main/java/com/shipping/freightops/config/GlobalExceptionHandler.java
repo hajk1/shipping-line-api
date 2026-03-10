@@ -1,6 +1,7 @@
 package com.shipping.freightops.config;
 
 import com.shipping.freightops.exception.BadRequestException;
+import com.shipping.freightops.exception.PdfGenerationException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -54,6 +55,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(RestClientException.class)
   public ResponseEntity<Map<String, Object>> handleRestClientException(RestClientException ex) {
     return buildError(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+  }
+
+  @ExceptionHandler(PdfGenerationException.class)
+  public ResponseEntity<Map<String, Object>> handlePdfError(PdfGenerationException ex) {
+    return buildError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
   }
 
   private ResponseEntity<Map<String, Object>> buildError(HttpStatus status, String message) {
