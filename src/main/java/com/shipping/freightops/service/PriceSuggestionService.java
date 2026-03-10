@@ -87,7 +87,8 @@ public class PriceSuggestionService {
     Voyage voyage =
         voyageRepository
             .findById(voyageId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Voyage not found"));
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Voyage not found"));
 
     String route = buildRoute(voyage);
     PageRequest pageRequest = PageRequest.of(0, MAX_HISTORICAL_VOYAGES);
@@ -163,10 +164,7 @@ public class PriceSuggestionService {
 
   private Map<Long, Long> toOrderCountMap(List<Object[]> rows) {
     return rows.stream()
-        .collect(
-            Collectors.toMap(
-                row -> (Long) row[0],
-                row -> ((Number) row[1]).longValue()));
+        .collect(Collectors.toMap(row -> (Long) row[0], row -> ((Number) row[1]).longValue()));
   }
 
   private String buildPrompt(
