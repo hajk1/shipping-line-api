@@ -24,6 +24,7 @@ import com.shipping.freightops.repository.AgentRepository;
 import com.shipping.freightops.repository.ContainerRepository;
 import com.shipping.freightops.repository.CustomerRepository;
 import com.shipping.freightops.repository.FreightOrderRepository;
+import com.shipping.freightops.repository.InvoiceRepository;
 import com.shipping.freightops.repository.PortRepository;
 import com.shipping.freightops.repository.VesselRepository;
 import com.shipping.freightops.repository.VoyagePriceRepository;
@@ -51,6 +52,7 @@ class InvoiceControllerTest {
   @Autowired private CustomerRepository customerRepository;
   @Autowired private VoyageRepository voyageRepository;
   @Autowired private VoyagePriceRepository voyagePriceRepository;
+  @Autowired private InvoiceRepository invoiceRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
   @Autowired private AgentRepository agentRepository;
 
@@ -58,6 +60,7 @@ class InvoiceControllerTest {
 
   @BeforeEach
   void setUp() {
+    invoiceRepository.deleteAll();
     freightOrderRepository.deleteAll();
     agentRepository.deleteAll();
     voyagePriceRepository.deleteAll();
