@@ -4,7 +4,6 @@ import com.itextpdf.text.DocumentException;
 import com.shipping.freightops.dto.*;
 import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.TrackingEvent;
-import com.shipping.freightops.enums.EventType;
 import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.service.FreightOrderService;
 import com.shipping.freightops.service.InvoiceService;
@@ -17,7 +16,6 @@ import java.io.FileNotFoundException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -40,7 +38,11 @@ public class FreightOrderController {
   private final FreightOrderRepository freightOrderRepository;
   private final TrackingEventService trackingEventService;
 
-  public FreightOrderController(FreightOrderService service, InvoiceService invoiceService, FreightOrderRepository freightOrderRepository, TrackingEventService trackingEventService) {
+  public FreightOrderController(
+      FreightOrderService service,
+      InvoiceService invoiceService,
+      FreightOrderRepository freightOrderRepository,
+      TrackingEventService trackingEventService) {
     this.service = service;
     this.invoiceService = invoiceService;
     this.freightOrderRepository = freightOrderRepository;
@@ -117,14 +119,18 @@ public class FreightOrderController {
     FreightOrder order = service.updateDiscount(id, request);
     return ResponseEntity.ok(FreightOrderResponse.fromEntity(order));
   }
+
   @PostMapping("/{id}/events")
-  public ResponseEntity<TrackingEvent> createEvent(@Valid @RequestBody TrackingEventRequest eventRequest,@PathVariable Long id, Errors errors){
-    if(errors.hasErrors()){
+  public ResponseEntity<TrackingEvent> createEvent(
+      @Valid @RequestBody TrackingEventRequest eventRequest, @PathVariable Long id, Errors errors) {
+    if (errors.hasErrors()) {
       throw new IllegalArgumentException("invalid data");
     }
     TrackingEvent event = new TrackingEvent();
-    FreightOrder order = freightOrderRepository.findById(id)
-            .orElseThrow(()->new IllegalArgumentException("Order not  found"));
+    FreightOrder order =
+        freightOrderRepository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Order not  found"));
     event.setFreightOrder(order);
     event.setDescription(eventRequest.getDescription());
     event.setEventTime(LocalDateTime.now());
@@ -135,8 +141,9 @@ public class FreightOrderController {
     TrackingEvent savedEvent = trackingEventService.createEvent(event);
     return ResponseEntity.ok().body(savedEvent);
   }
+
   @GetMapping("/{id}/events")
-  public ResponseEntity<List<TrackingEvent>> getAllEvents(@PathVariable Long id){
+  public ResponseEntity<List<TrackingEvent>> getAllEvents(@PathVariable Long id) {
     List<TrackingEvent> events = trackingEventService.getAllEventsByOrderId(id);
     return ResponseEntity.ok().body(events);
   }

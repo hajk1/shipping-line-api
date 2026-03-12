@@ -1,10 +1,10 @@
 package com.shipping.freightops.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shipping.freightops.enums.OrderStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /** A freight booking made by the internal ops team, assigning a container to a voyage. */
@@ -37,9 +37,9 @@ public class FreightOrder extends BaseEntity {
   @NotBlank
   @Column(nullable = false)
   private String orderedBy;
-  @OneToMany(mappedBy = "freightOrder")
-  @JsonIgnore
-  private List<TrackingEvent> events;
+
+  @OneToMany(mappedBy = "freightOrder", cascade = CascadeType.ALL)
+  private List<TrackingEvent> events = new ArrayList<>();
 
   @Column(length = 500)
   private String notes;

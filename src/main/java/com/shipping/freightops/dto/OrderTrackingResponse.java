@@ -6,8 +6,8 @@ import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.enums.VoyageStatus;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OrderTrackingResponse {
@@ -23,7 +23,7 @@ public class OrderTrackingResponse {
   private LocalDateTime departureTime;
   private LocalDateTime estimatedArrival;
   private VoyageStatus voyageStatus;
-  private List<TrackingEvent> events;
+  private List<TrackingEvent> events = new ArrayList<>();
 
   public static OrderTrackingResponse fromEntity(FreightOrder order) {
     OrderTrackingResponse dto = new OrderTrackingResponse();
@@ -32,6 +32,7 @@ public class OrderTrackingResponse {
     dto.ContainerCode = order.getContainer().getContainerCode();
     dto.containerSize = order.getContainer().getSize();
     dto.containerType = order.getContainer().getType();
+    dto.events = order.getEvents();
     if (order.getVoyage() != null) {
       dto.voyageNumber = order.getVoyage().getVoyageNumber();
       dto.vesselName = order.getVoyage().getVessel().getName();
@@ -40,7 +41,6 @@ public class OrderTrackingResponse {
       dto.departureTime = order.getVoyage().getDepartureTime();
       dto.estimatedArrival = order.getVoyage().getArrivalTime();
       dto.voyageStatus = order.getVoyage().getStatus();
-      dto.events = order.getEvents();
     }
     return dto;
   }

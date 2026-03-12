@@ -5,50 +5,53 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class TrackingEventRequest {
-    @NotNull
-    private EventType eventType;
-    @NotBlank(message = "description is required")
-    private String description;
-    private String location;
-    private String performedBy;
-    public TrackingEventRequest(){}
-    public TrackingEventRequest( EventType eventType, String description, String location, String performedBy) {
-        this.eventType = eventType;
-        this.description = description;
-        this.location = location;
-        this.performedBy = performedBy;
-    }
+  @NotNull private EventType eventType;
 
+  @NotBlank(message = "description is required")
+  private String description;
 
-    public EventType getEventType() {
-        return eventType;
-    }
+  private String location;
+  private String performedBy;
 
-    public void setEventType(EventType eventType) {
-        this.eventType = eventType;
-    }
+  public TrackingEventRequest() {}
 
-    public String getDescription() {
-        return description;
-    }
+  public TrackingEventRequest(
+      EventType eventType, String description, String location, String performedBy) {
+    this.eventType = eventType;
+    this.description = description;
+    this.location = location;
+    this.performedBy = performedBy;
+  }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+  public EventType getEventType() {
+    return eventType;
+  }
 
-    public String getLocation() {
-        return location;
-    }
+  public void setEventType(EventType eventType) {
+    this.eventType = eventType;
+  }
 
-    public void setLocation(String location) {
-        this.location = location;
-    }
+  public String getDescription() {
+    return description;
+  }
 
-    public String getPerformedBy() {
-        return performedBy;
-    }
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
-    public void setPerformedBy(String performedBy) {
-        this.performedBy = performedBy;
-    }
+  public String getLocation() {
+    return location;
+  }
+
+  public void setLocation(String location) {
+    this.location = location;
+  }
+
+  public String getPerformedBy() {
+    return performedBy;
+  }
+
+  public void setPerformedBy(String performedBy) {
+    this.performedBy = performedBy;
+  }
 }

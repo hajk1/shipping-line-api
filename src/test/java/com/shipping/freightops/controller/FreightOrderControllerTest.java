@@ -13,10 +13,9 @@ import com.shipping.freightops.entity.*;
 import com.shipping.freightops.enums.*;
 import com.shipping.freightops.repository.*;
 import com.shipping.freightops.service.FreightOrderService;
+import com.shipping.freightops.service.TrackingEventService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import com.shipping.freightops.service.TrackingEventService;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -57,8 +56,7 @@ class FreightOrderControllerTest {
   private Customer savedCustomer;
   private Agent savedAgent;
   private Long freightOrderId;
-    @Autowired
-    private TrackingEventService trackingEventService;
+  @Autowired private TrackingEventService trackingEventService;
 
   @BeforeEach
   void setUp() {
@@ -436,6 +434,7 @@ class FreightOrderControllerTest {
         .perform(get("/api/v1/freight-orders/" + freightOrderId + "/invoice"))
         .andExpect(status().isConflict());
   }
+
   @Test
   @DisplayName("POST /api/v1/freight-orders/{id}/events → 200 OK")
   void createManualEvent_returnsOk() throws Exception {
@@ -446,33 +445,16 @@ class FreightOrderControllerTest {
     request.setPerformedBy("scanner-T2");
 
     mockMvc
-            .perform(
-                    post("/api/v1/freight-orders/{id}/events", freightOrderId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.eventType").value("GATE_IN"))
-            .andExpect(jsonPath("$.description").value("Container entered terminal"))
-            .andExpect(jsonPath("$.location").value("Jebel Ali Terminal 2"));
+        .perform(
+            post("/api/v1/freight-orders/{id}/events", freightOrderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.eventType").value("GATE_IN"))
+        .andExpect(jsonPath("$.description").value("Container entered terminal"))
+        .andExpect(jsonPath("$.location").value("Jebel Ali Terminal 2"));
   }
-  @Test
-  @DisplayName("GET /api/v1/freight-orders/{id}/events → 200 OK")
-  void getAllEvents_returnsList() throws Exception {
-    // Ajout préalable d'un événement pour s'assurer que la liste n'est pas vide
-    TrackingEvent event = new TrackingEvent();
-    event.setFreightOrder(freightOrderRepository.findById(freightOrderId).get());
-    event.setEventType(EventType.NOTE);
-    event.setDescription("Test note");
-    event.setEventTime(LocalDateTime.now());
-    trackingEventService.createEvent(event);
 
-    mockMvc
-            .perform(get("/api/v1/freight-orders/{id}/events", freightOrderId))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$[0].description").exists())
-            .andExpect(jsonPath("$[0].eventTime").exists());
-  }
   @Test
   @DisplayName("Auto-event creation on order creation")
   void createOrder_automaticallyCreatesInitialEvent() throws Exception {
@@ -483,18 +465,41 @@ class FreightOrderControllerTest {
     request.setAgentId(savedAgent.getId());
     request.setOrderedBy("ops-team");
 
-    String response = mockMvc.perform(
-                    post("/api/v1/freight-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
+    String response =
+        mockMvc
+            .perform(
+                post("/api/v1/freight-orders")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
-            .andReturn().getResponse().getContentAsString();
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
 
     Integer newOrderId = JsonPath.parse(response).read("$.id");
 
-    mockMvc.perform(get("/api/v1/freight-orders/{id}/events", newOrderId))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].eventType").value("STATUS_CHANGE"))
-            .andExpect(jsonPath("$[0].description").exists());
+    mockMvc
+        .perform(get("/api/v1/freight-orders/{id}/events", newOrderId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].eventType").value("STATUS_CHANGE"))
+        .andExpect(jsonPath("$[0].description").exists());
+  }
+
+  @Test
+  @DisplayName("GET /api/v1/freight-orders/{id}/events → 200 OK")
+  void getAllEvents_returnsList() throws Exception {
+    // Ajout préalable d'un événement pour s'assurer que la liste n'est pas vide
+    TrackingEvent event = new TrackingEvent();
+    event.setFreightOrder(freightOrderRepository.findById(freightOrderId).get());
+    event.setEventType(EventType.NOTE);
+    event.setDescription("Test note");
+    event.setEventTime(LocalDateTime.now());
+
+    mockMvc
+        .perform(get("/api/v1/freight-orders/{id}/events", freightOrderId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$[0].description").exists())
+        .andExpect(jsonPath("$[0].eventTime").exists());
   }
 }

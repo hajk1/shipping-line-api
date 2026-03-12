@@ -21,7 +21,6 @@ import com.shipping.freightops.repository.VoyageRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -44,13 +43,14 @@ public class FreightOrderService {
   private final TrackingEventService trackingEventService;
 
   public FreightOrderService(
-          FreightOrderRepository orderRepository,
-          VoyageRepository voyageRepository,
-          ContainerRepository containerRepository,
-          AgentRepository agentRepository,
-          CustomerRepository customerRepository,
-          VoyagePriceRepository voyagePriceRepository,
-          BookingProperties bookingProperties, TrackingEventService trackingEventService) {
+      FreightOrderRepository orderRepository,
+      VoyageRepository voyageRepository,
+      ContainerRepository containerRepository,
+      AgentRepository agentRepository,
+      CustomerRepository customerRepository,
+      VoyagePriceRepository voyagePriceRepository,
+      BookingProperties bookingProperties,
+      TrackingEventService trackingEventService) {
     this.orderRepository = orderRepository;
     this.voyageRepository = voyageRepository;
     this.containerRepository = containerRepository;
@@ -128,7 +128,7 @@ public class FreightOrderService {
     FreightOrder savedOrder = orderRepository.save(order);
 
     handleAutoCutoff(voyage);
-    //Adding event tracking logique
+    // Adding event tracking logique
     TrackingEvent event = new TrackingEvent();
     event.setFreightOrder(savedOrder);
     event.setDescription("order created with status created");
@@ -136,6 +136,7 @@ public class FreightOrderService {
     event.setEventType(EventType.STATUS_CHANGE);
     event.setPerformedBy(order.getAgent().getName());
     trackingEventService.createEvent(event);
+    savedOrder.getEvents().add(event);
     return savedOrder;
   }
 
