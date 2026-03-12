@@ -130,7 +130,7 @@ public class FreightOrderController {
     event.setEventType(eventRequest.getEventType());
     event.setLocation(eventRequest.getLocation());
     event.setDescription(eventRequest.getDescription());
-    event.setPerformedBy(event.getPerformedBy());
+    event.setPerformedBy(eventRequest.getPerformedBy());
     TrackingEvent savedEvent = trackingEventService.createEvent(event);
     return ResponseEntity.ok().body(savedEvent);
   }

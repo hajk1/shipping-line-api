@@ -1,5 +1,6 @@
 package com.shipping.freightops.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shipping.freightops.enums.EventType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 public class TrackingEvent extends BaseEntity{
     @ManyToOne(optional = false)
+    @JsonIgnore
     private FreightOrder freightOrder;
     private EventType eventType;
     @Column(nullable = false)
