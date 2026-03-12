@@ -1,39 +1,23 @@
-package com.shipping.freightops.entity;
+package com.shipping.freightops.dto;
 
 import com.shipping.freightops.enums.EventType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotBlank;
 
-import java.time.LocalDateTime;
-@Entity
-public class TrackingEvent extends BaseEntity{
-    @ManyToOne(optional = false)
-    private FreightOrder freightOrder;
+public class TrackingEventRequest {
+    @NotBlank
     private EventType eventType;
-    @Column(nullable = false)
     @NotBlank(message = "description is required")
     private String description;
     private String location;
     private String performedBy;
-    private LocalDateTime eventTime;
-    public TrackingEvent(){}
-    public TrackingEvent(FreightOrder freightOrder,EventType eventType, String description, String location, String performedBy, LocalDateTime eventTime) {
-        this.freightOrder = freightOrder;
+
+    public TrackingEventRequest( EventType eventType, String description, String location, String performedBy) {
+        this.eventType = eventType;
         this.description = description;
         this.location = location;
         this.performedBy = performedBy;
-        this.eventTime = eventTime;
     }
 
-    public FreightOrder getFreightOrder() {
-        return freightOrder;
-    }
-
-    public void setFreightOrder(FreightOrder freightOrder) {
-        this.freightOrder = freightOrder;
-    }
 
     public EventType getEventType() {
         return eventType;
@@ -65,13 +49,5 @@ public class TrackingEvent extends BaseEntity{
 
     public void setPerformedBy(String performedBy) {
         this.performedBy = performedBy;
-    }
-
-    public LocalDateTime getEventTime() {
-        return eventTime;
-    }
-
-    public void setEventTime(LocalDateTime eventTime) {
-        this.eventTime = eventTime;
     }
 }
