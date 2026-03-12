@@ -37,6 +37,7 @@ public class TrackingControllerTest {
   @Autowired private CustomerRepository customerRepository;
   @Autowired private AgentRepository agentRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private TrackingService trackingService;
 
   private Long orderId;
