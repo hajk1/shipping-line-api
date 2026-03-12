@@ -4,6 +4,7 @@ import com.itextpdf.text.DocumentException;
 import com.shipping.freightops.dto.*;
 import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.TrackingEvent;
+import com.shipping.freightops.enums.EventType;
 import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.service.FreightOrderService;
 import com.shipping.freightops.service.InvoiceService;
