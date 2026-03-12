@@ -12,6 +12,7 @@ import com.shipping.freightops.entity.Vessel;
 import com.shipping.freightops.entity.VesselOwner;
 import com.shipping.freightops.repository.VesselOwnerRepository;
 import com.shipping.freightops.repository.VesselRepository;
+import com.shipping.freightops.repository.VoyagePriceRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,12 +33,14 @@ class VesselOwnerControllerTest {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private VesselOwnerRepository vesselOwnerRepository;
   @Autowired private VesselRepository vesselRepository;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private VoyageRepository voyageRepository;
 
   private Vessel savedVessel;
 
   @BeforeEach
   void setUp() {
+    voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     vesselOwnerRepository.deleteAll();
     vesselRepository.deleteAll();
