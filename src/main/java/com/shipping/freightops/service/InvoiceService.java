@@ -1,9 +1,11 @@
 package com.shipping.freightops.service;
 
 import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.ColumnText;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
+import com.shipping.freightops.config.AppProperties;
 import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.Invoice;
 import com.shipping.freightops.enums.OrderStatus;
@@ -23,6 +25,11 @@ public class InvoiceService {
 
   @Autowired private FreightOrderRepository freightOrderRepository;
 
+  private static final int QR_SIZE_PX = 100;
+  private static final float QR_SIZE_PT = 100f;
+  @Autowired private BarcodeService barcodeService;
+  @Autowired private AppProperties appProperties;
+
   private static final BaseColor BRAND_TEAL = new BaseColor(95, 134, 112);
   private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -41,7 +48,7 @@ public class InvoiceService {
 
     Document document = new Document(PageSize.A4, 36, 36, 50, 36);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    PdfWriter.getInstance(document, out);
+    PdfWriter writer = PdfWriter.getInstance(document, out);
     document.open();
 
     // Fonts
@@ -160,6 +167,9 @@ public class InvoiceService {
     footer.setAlignment(Element.ALIGN_CENTER);
     document.add(footer);
 
+    // --- 6. QR Code (bottom-right, absolute position) ---
+    addTrackingQr(writer, document, orderId);
+
     document.close();
 
     // Logique de persistance
@@ -169,6 +179,39 @@ public class InvoiceService {
   }
 
   // Helpers
+  private void addTrackingQr(PdfWriter writer, Document document, Long orderId)
+      throws DocumentException {
+    String trackUrl = appProperties.getBaseUrl() + "/api/v1/track/order/" + orderId;
+    byte[] qrBytes = barcodeService.generateQrCode(trackUrl, QR_SIZE_PX, QR_SIZE_PX);
+
+    try {
+      float rightMargin = document.rightMargin();
+      float bottomMargin = document.bottomMargin();
+      float pageWidth = document.getPageSize().getWidth();
+
+      float labelHeight = 10f;
+      float padding = 4f;
+      float x = pageWidth - rightMargin - QR_SIZE_PT;
+      float yQr = bottomMargin + labelHeight + padding;
+
+      Image qrImage = Image.getInstance(qrBytes);
+      qrImage.scaleAbsolute(QR_SIZE_PT, QR_SIZE_PT);
+      qrImage.setAbsolutePosition(x, yQr);
+      document.add(qrImage);
+
+      Font tiny = FontFactory.getFont(FontFactory.HELVETICA, 7, BaseColor.GRAY);
+      ColumnText.showTextAligned(
+          writer.getDirectContent(),
+          Element.ALIGN_CENTER,
+          new Phrase("Scan to track your shipment", tiny),
+          x + QR_SIZE_PT / 2,
+          bottomMargin,
+          0);
+    } catch (Exception e) {
+      throw new DocumentException("Failed to add tracking QR code: " + e.getMessage());
+    }
+  }
+
   private void addRow(PdfPTable t, String l, String v, Font f1, Font f2) {
     PdfPCell c1 = getBorderlessCell(l + ":", f1);
     c1.setHorizontalAlignment(Element.ALIGN_RIGHT);

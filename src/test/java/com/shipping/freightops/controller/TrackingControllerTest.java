@@ -35,6 +35,7 @@ public class TrackingControllerTest {
   @Autowired private CustomerRepository customerRepository;
   @Autowired private AgentRepository agentRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private TrackingService trackingService;
 
   private Long orderId;
@@ -43,6 +44,7 @@ public class TrackingControllerTest {
   void setup() {
     // Clear repositories before each test
     freightOrderRepository.deleteAll();
+    voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     containerRepository.deleteAll();
     vesselRepository.deleteAll();

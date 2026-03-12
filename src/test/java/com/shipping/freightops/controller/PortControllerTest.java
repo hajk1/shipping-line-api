@@ -12,6 +12,7 @@ import com.shipping.freightops.dto.CreatePortRequest;
 import com.shipping.freightops.entity.Port;
 import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.PortRepository;
+import com.shipping.freightops.repository.VoyagePriceRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,11 +32,13 @@ class PortControllerTest {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private PortRepository portRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private VoyageRepository voyageRepository;
 
   @BeforeEach
   void setUp() {
     freightOrderRepository.deleteAll();
+    voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     portRepository.deleteAll();
   }
