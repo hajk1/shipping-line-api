@@ -56,8 +56,8 @@ public class TrackingControllerTest {
     agentRepository.deleteAll();
 
     // Setup test data for tracking tests
-    Port departurePort = portRepository.save(new Port("AEJEA", "Jebel Ali", "UAE"));
-    Port arrivalPort = portRepository.save(new Port("CNSHA", "Shanghai", "China"));
+    Port departurePort = portRepository.save(new Port("AEJEC", "Jebel Ali", "UAE"));
+    Port arrivalPort = portRepository.save(new Port("CNSHC", "Shanghai", "China"));
     Vessel vessel = vesselRepository.save(new Vessel("MV Test", "1111111", 3000));
     Agent agent = new Agent();
     agent.setName("Test Agent");
