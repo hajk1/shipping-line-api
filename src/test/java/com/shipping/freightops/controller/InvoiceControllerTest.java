@@ -29,6 +29,7 @@ import com.shipping.freightops.repository.PortRepository;
 import com.shipping.freightops.repository.VesselRepository;
 import com.shipping.freightops.repository.VoyagePriceRepository;
 import com.shipping.freightops.repository.VoyageRepository;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,7 @@ class InvoiceControllerTest {
   @Autowired private CustomerRepository customerRepository;
   @Autowired private VoyageRepository voyageRepository;
   @Autowired private VoyagePriceRepository voyagePriceRepository;
+  @Autowired private EntityManager entityManager;
   @Autowired private InvoiceRepository invoiceRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
   @Autowired private AgentRepository agentRepository;
@@ -69,6 +71,8 @@ class InvoiceControllerTest {
     customerRepository.deleteAll();
     vesselRepository.deleteAll();
     portRepository.deleteAll();
+    entityManager.flush();
+    entityManager.clear();
 
     Port departure = portRepository.save(new Port("AEJEA", "Jebel Ali", "UAE"));
     Port arrival = portRepository.save(new Port("CNSHA", "Shanghai", "China"));
