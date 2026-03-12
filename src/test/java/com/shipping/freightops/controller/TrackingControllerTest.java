@@ -216,6 +216,4 @@ public class TrackingControllerTest {
         .andExpect(jsonPath("$.containerCode").value("TSTU1234567"))
         .andExpect(jsonPath("$.events").isArray());
   }
-
-
 }
