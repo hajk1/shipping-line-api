@@ -100,7 +100,7 @@ public class TrackingControllerTest {
     orderId = savedOrder.getId();
     Port departure2 = portRepository.save(new Port("AEJEB", "Jebel Ali 2", "UAE"));
     Port arrival2 = portRepository.save(new Port("CNSHB", "Shanghai 2", "China"));
-    Vessel vessel2 = vesselRepository.save(new Vessel("MV Test 2", "9999999", 3000));
+    Vessel vessel2 = vesselRepository.save(new Vessel("MV Test 2", "99999998", 3000));
 
     Agent agent2 = new Agent();
     agent2.setName("Test Agent 2");
