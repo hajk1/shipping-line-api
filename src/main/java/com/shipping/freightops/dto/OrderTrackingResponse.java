@@ -1,11 +1,14 @@
 package com.shipping.freightops.dto;
 
 import com.shipping.freightops.entity.FreightOrder;
+import com.shipping.freightops.entity.TrackingEvent;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.enums.VoyageStatus;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class OrderTrackingResponse {
   private Long orderId;
@@ -20,6 +23,7 @@ public class OrderTrackingResponse {
   private LocalDateTime departureTime;
   private LocalDateTime estimatedArrival;
   private VoyageStatus voyageStatus;
+  private List<TrackingEvent> events = new ArrayList<>();
 
   public static OrderTrackingResponse fromEntity(FreightOrder order) {
     OrderTrackingResponse dto = new OrderTrackingResponse();
@@ -28,6 +32,7 @@ public class OrderTrackingResponse {
     dto.ContainerCode = order.getContainer().getContainerCode();
     dto.containerSize = order.getContainer().getSize();
     dto.containerType = order.getContainer().getType();
+    dto.events = order.getEvents();
     if (order.getVoyage() != null) {
       dto.voyageNumber = order.getVoyage().getVoyageNumber();
       dto.vesselName = order.getVoyage().getVessel().getName();
@@ -38,6 +43,14 @@ public class OrderTrackingResponse {
       dto.voyageStatus = order.getVoyage().getStatus();
     }
     return dto;
+  }
+
+  public void setEvents(List<TrackingEvent> events) {
+    this.events = events;
+  }
+
+  public List<TrackingEvent> getEvents() {
+    return events;
   }
 
   public String getVoyageNumber() {

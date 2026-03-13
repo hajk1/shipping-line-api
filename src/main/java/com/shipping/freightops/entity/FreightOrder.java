@@ -1,16 +1,11 @@
 package com.shipping.freightops.entity;
 
 import com.shipping.freightops.enums.OrderStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 /** A freight booking made by the internal ops team, assigning a container to a voyage. */
 @Entity
@@ -43,13 +38,8 @@ public class FreightOrder extends BaseEntity {
   @Column(nullable = false)
   private String orderedBy;
 
-  public String getOrderedBy() {
-    return orderedBy;
-  }
-
-  public void setOrderedBy(String orderedBy) {
-    this.orderedBy = orderedBy;
-  }
+  @OneToMany(mappedBy = "freightOrder", cascade = CascadeType.ALL)
+  private List<TrackingEvent> events = new ArrayList<>();
 
   @Column(length = 500)
   private String notes;
@@ -78,6 +68,24 @@ public class FreightOrder extends BaseEntity {
   @Column(nullable = true, length = 500)
   private String discountReason;
 
+  public FreightOrder() {}
+
+  public void setEvents(List<TrackingEvent> events) {
+    this.events = events;
+  }
+
+  public List<TrackingEvent> getEvents() {
+    return events;
+  }
+
+  public String getOrderedBy() {
+    return orderedBy;
+  }
+
+  public void setOrderedBy(String orderedBy) {
+    this.orderedBy = orderedBy;
+  }
+
   public Customer getCustomer() {
     return customer;
   }
@@ -85,8 +93,6 @@ public class FreightOrder extends BaseEntity {
   public void setCustomer(Customer customer) {
     this.customer = customer;
   }
-
-  public FreightOrder() {}
 
   public Voyage getVoyage() {
     return voyage;

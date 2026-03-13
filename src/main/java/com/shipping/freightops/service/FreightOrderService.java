@@ -9,6 +9,7 @@ import com.shipping.freightops.entity.Container;
 import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.enums.ContainerSize;
+import com.shipping.freightops.enums.EventType;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.enums.VoyageStatus;
 import com.shipping.freightops.exception.BadRequestException;
@@ -19,6 +20,7 @@ import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -38,6 +40,7 @@ public class FreightOrderService {
   private final VoyagePriceRepository voyagePriceRepository;
   private final BookingProperties bookingProperties;
   private static final Logger log = LoggerFactory.getLogger(FreightOrderService.class);
+  private final TrackingEventService trackingEventService;
 
   public FreightOrderService(
       FreightOrderRepository orderRepository,
@@ -46,7 +49,8 @@ public class FreightOrderService {
       AgentRepository agentRepository,
       CustomerRepository customerRepository,
       VoyagePriceRepository voyagePriceRepository,
-      BookingProperties bookingProperties) {
+      BookingProperties bookingProperties,
+      TrackingEventService trackingEventService) {
     this.orderRepository = orderRepository;
     this.voyageRepository = voyageRepository;
     this.containerRepository = containerRepository;
@@ -54,6 +58,7 @@ public class FreightOrderService {
     this.customerRepository = customerRepository;
     this.voyagePriceRepository = voyagePriceRepository;
     this.bookingProperties = bookingProperties;
+    this.trackingEventService = trackingEventService;
   }
 
   @Transactional
@@ -123,6 +128,15 @@ public class FreightOrderService {
     FreightOrder savedOrder = orderRepository.save(order);
 
     handleAutoCutoff(voyage);
+    // Adding event tracking logique
+    TrackingEvent event = new TrackingEvent();
+    event.setFreightOrder(savedOrder);
+    event.setDescription("order created with status created");
+    event.setEventTime(LocalDateTime.now());
+    event.setEventType(EventType.STATUS_CHANGE);
+    event.setPerformedBy(order.getAgent().getName());
+    trackingEventService.createEvent(event);
+    savedOrder.getEvents().add(event);
     return savedOrder;
   }
 
