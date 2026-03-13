@@ -54,8 +54,8 @@ public class ContainerControllerTest {
             new Container("TSTU1234567", ContainerSize.TWENTY_FOOT, ContainerType.DRY));
 
     // Ports
-    Port departure = portRepository.save(new Port("AEJEA", "Jebel Ali", "UAE"));
-    Port arrival = portRepository.save(new Port("CNSHA", "Shanghai", "China"));
+    Port departure = portRepository.save(new Port("AEJEK", "Jebel Ali", "UAE"));
+    Port arrival = portRepository.save(new Port("CNSHK", "Shanghai", "China"));
 
     // Vessels
     Vessel vessel1 = vesselRepository.save(new Vessel("MV Active", "V001", 1000));

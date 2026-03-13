@@ -48,6 +48,7 @@ public class TrackingControllerTest {
   void setup() {
     // Clear repositories before each test
     freightOrderRepository.deleteAll();
+    voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     containerRepository.deleteAll();
     vesselRepository.deleteAll();

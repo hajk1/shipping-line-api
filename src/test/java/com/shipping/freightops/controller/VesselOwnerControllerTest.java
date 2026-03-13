@@ -12,6 +12,7 @@ import com.shipping.freightops.entity.Vessel;
 import com.shipping.freightops.entity.VesselOwner;
 import com.shipping.freightops.repository.VesselOwnerRepository;
 import com.shipping.freightops.repository.VesselRepository;
+import com.shipping.freightops.repository.VoyagePriceRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,13 +36,16 @@ class VesselOwnerControllerTest {
   @Autowired private VoyageRepository voyageRepository;
 
   private Vessel savedVessel;
+    @Autowired
+    private VoyagePriceRepository voyagePriceRepository;
 
   @BeforeEach
   void setUp() {
+    voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     vesselOwnerRepository.deleteAll();
     vesselRepository.deleteAll();
-    savedVessel = vesselRepository.save(new Vessel("MV Test", "1234567", 500));
+    savedVessel = vesselRepository.save(new Vessel("MV Test", "1234566", 500));
   }
 
   // ── ADD OWNER ──
