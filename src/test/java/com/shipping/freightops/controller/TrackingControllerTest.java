@@ -12,7 +12,6 @@ import com.shipping.freightops.enums.ContainerType;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.repository.*;
 import com.shipping.freightops.service.FreightOrderService;
-import com.shipping.freightops.service.TrackingService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,12 +37,10 @@ public class TrackingControllerTest {
   @Autowired private AgentRepository agentRepository;
   @Autowired private FreightOrderRepository freightOrderRepository;
   @Autowired private VoyagePriceRepository voyagePriceRepository;
-  @Autowired private TrackingService trackingService;
+  @Autowired private FreightOrderService freightOrderService;
 
   private Long orderId;
   private Long orderId2;
-  @Autowired private FreightOrderService freightOrderService;
-  @Autowired private VoyagePriceRepository voyagePriceRepository;
 
   @BeforeEach
   void setup() {

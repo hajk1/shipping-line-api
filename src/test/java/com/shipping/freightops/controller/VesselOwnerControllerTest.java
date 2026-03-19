@@ -37,8 +37,6 @@ class VesselOwnerControllerTest {
   @Autowired private VoyageRepository voyageRepository;
 
   private Vessel savedVessel;
-    @Autowired
-    private VoyagePriceRepository voyagePriceRepository;
 
   @BeforeEach
   void setUp() {
