@@ -33,11 +33,10 @@ class VesselOwnerControllerTest {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private VesselOwnerRepository vesselOwnerRepository;
   @Autowired private VesselRepository vesselRepository;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private VoyageRepository voyageRepository;
 
   private Vessel savedVessel;
-    @Autowired
-    private VoyagePriceRepository voyagePriceRepository;
 
   @BeforeEach
   void setUp() {

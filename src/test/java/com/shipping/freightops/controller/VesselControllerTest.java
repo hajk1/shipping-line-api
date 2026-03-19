@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shipping.freightops.dto.CreateVesselRequest;
 import com.shipping.freightops.entity.Vessel;
 import com.shipping.freightops.repository.VesselRepository;
+import com.shipping.freightops.repository.VoyagePriceRepository;
 import com.shipping.freightops.repository.VoyageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 public class VesselControllerTest {
 
   @Autowired private MockMvc mockMvc;
+  @Autowired private VoyagePriceRepository voyagePriceRepository;
   @Autowired private VoyageRepository voyageRepository;
   @Autowired private VesselRepository vesselRepository;
   @Autowired private ObjectMapper objectMapper;
@@ -38,6 +40,7 @@ public class VesselControllerTest {
 
   @BeforeEach
   void setUp() {
+    voyagePriceRepository.deleteAll();
     voyageRepository.deleteAll();
     vesselRepository.deleteAll();
     Vessel vessel = new Vessel("MV Test", "9999999", 3000);
