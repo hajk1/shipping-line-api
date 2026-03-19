@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InvoiceService {
@@ -33,6 +34,7 @@ public class InvoiceService {
   private static final BaseColor BRAND_TEAL = new BaseColor(95, 134, 112);
   private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+  @Transactional
   public byte[] generateInvoice(Long orderId) throws DocumentException, FileNotFoundException {
     FreightOrder order =
         freightOrderRepository
