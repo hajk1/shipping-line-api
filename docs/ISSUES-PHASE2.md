@@ -34,17 +34,20 @@ Voyages should define a base freight price per container size. When a freight or
 price is derived from the voyage pricing.
 
 **New entity: `VoyagePrice`**
+
 - `voyageId` (FK to Voyage)
 - `containerSize` (TWENTY_FOOT / FORTY_FOOT)
 - `basePriceUsd` (BigDecimal)
 - Unique constraint on (`voyageId`, `containerSize`)
 
 **Update `FreightOrder` entity:**
+
 - Add `basePriceUsd` (BigDecimal) — copied from `VoyagePrice` at order creation time
 - Add `discountPercent` (BigDecimal, default 0, range 0–100)
 - Add `finalPriceUsd` (BigDecimal) — computed as `basePriceUsd * (1 - discountPercent / 100)`
 
 **New endpoints:**
+
 - `POST /api/v1/voyages/{voyageId}/prices` — set price for a container size on a voyage
 - `GET /api/v1/voyages/{voyageId}/prices` — list prices for a voyage
 
@@ -55,6 +58,7 @@ price is derived from the voyage pricing.
 - If no price is defined for that container size on the voyage, return 400 with a clear message
 
 **Acceptance criteria:**
+
 - [ ] Voyage prices can be set per container size
 - [ ] Order creation auto-populates price from voyage
 - [ ] `finalPriceUsd` is calculated correctly
@@ -72,9 +76,11 @@ price is derived from the voyage pricing.
 Allow setting or updating a discount on a freight order, both at creation and after.
 
 **New endpoint:**
+
 - `PATCH /api/v1/freight-orders/{id}/discount` — update discount on an existing order
 
 **Request body:**
+
 ```json
 {
   "discountPercent": 15.0,
@@ -83,6 +89,7 @@ Allow setting or updating a discount on a freight order, both at creation and af
 ```
 
 **Update `FreightOrder` entity:**
+
 - Add `discountReason` (String, nullable, max 500 chars)
 
 **Business rules:**
@@ -94,6 +101,7 @@ Allow setting or updating a discount on a freight order, both at creation and af
 - Discount cannot be changed on `CANCELLED` or `DELIVERED` orders (return 409)
 
 **Acceptance criteria:**
+
 - [ ] Discount can be applied at creation and updated later
 - [ ] `finalPriceUsd` recalculates correctly on every discount change
 - [ ] Validation enforces 0–100 range
@@ -111,6 +119,7 @@ Before we can send invoices, we need to know who the customer is. Create a `Cust
 link freight orders to it.
 
 **New entity: `Customer`**
+
 - `id`, `createdAt`, `updatedAt` (from BaseEntity)
 - `companyName` (String, required)
 - `contactName` (String, required)
@@ -119,16 +128,19 @@ link freight orders to it.
 - `address` (String, optional)
 
 **New endpoints:**
+
 - `POST /api/v1/customers` — create
 - `GET /api/v1/customers` — list
 - `GET /api/v1/customers/{id}` — get by ID
 
 **Update `FreightOrder`:**
+
 - Add `customerId` (FK to Customer, required)
 - Update `CreateFreightOrderRequest` to include `customerId`
 - Update `FreightOrderResponse` to include `customerName` and `customerEmail`
 
 **Acceptance criteria:**
+
 - [ ] Customer CRUD works
 - [ ] Email validation enforced
 - [ ] Freight orders require a valid customer
@@ -145,9 +157,11 @@ link freight orders to it.
 When a freight order is marked as `DELIVERED`, generate a PDF invoice and allow it to be downloaded.
 
 **New endpoint:**
+
 - `GET /api/v1/freight-orders/{id}/invoice` — returns PDF (Content-Type: `application/pdf`)
 
 **Invoice should include:**
+
 - Invoice number (auto-generated, e.g. `INV-2025-00042`)
 - Customer name, email, address
 - Voyage number, departure/arrival ports
@@ -157,16 +171,19 @@ When a freight order is marked as `DELIVERED`, generate a PDF invoice and allow 
 - Company footer (hardcode for now)
 
 **Technical hints:**
+
 - Use a PDF library — `iText` (AGPL) or `OpenPDF` (LGPL, recommended for POC)
 - Add dependency to `pom.xml`
 - Create an `InvoiceService` that builds the PDF as a `byte[]`
 - Controller returns `ResponseEntity<byte[]>` with proper headers
 
 **Business rules:**
+
 - Invoice can only be generated for orders with status `DELIVERED`
 - Return 409 if order is not yet delivered
 
 **Acceptance criteria:**
+
 - [ ] PDF downloads for delivered orders
 - [ ] PDF contains all required fields
 - [ ] Returns 409 for non-delivered orders
@@ -183,25 +200,30 @@ When a freight order is marked as `DELIVERED`, generate a PDF invoice and allow 
 Add ability to email the invoice PDF to the customer.
 
 **New endpoint:**
+
 - `POST /api/v1/freight-orders/{id}/invoice/send` — generates and emails the invoice
 
 **Setup:**
+
 - Add `spring-boot-starter-mail` dependency
 - Configure SMTP in `application.properties` (use environment variables for credentials)
 - For local dev, document how to use [MailHog](https://github.com/mailhog/MailHog)
   or [Mailtrap](https://mailtrap.io/)
 
 **What to create:**
+
 - `EmailService` — generic email sender (to, subject, body, attachment)
 - Wire it into `InvoiceService` or create an `InvoiceEmailService`
 
 **Business rules:**
+
 - Can only send invoice for `DELIVERED` orders
 - Email goes to the customer's email address from the `Customer` entity
 - Subject: `Invoice INV-2025-XXXXX — Voyage VOY-XXXX`
 - Body: brief text with order summary, PDF as attachment
 
 **Acceptance criteria:**
+
 - [ ] Email sends with PDF attachment for delivered orders
 - [ ] Returns 409 for non-delivered orders
 - [ ] README updated with SMTP / MailHog setup instructions
@@ -547,14 +569,17 @@ Notify customers when a voyage's arrival time is updated after departure, indica
 Track the current load on a voyage (in TEU) and allow ops to manually stop accepting new orders.
 
 **Update `Voyage` entity:**
+
 - Add `maxCapacityTeu` (int) — defaults from `vessel.capacityTeu` at creation but can be overridden
 - Add `bookingOpen` (boolean, default `true`)
 
 **New endpoints:**
+
 - `GET /api/v1/voyages/{id}/load` — returns current load summary
 - `PATCH /api/v1/voyages/{id}/booking-status` — manually open or close bookings
 
 **Load summary response:**
+
 ```json
 {
   "voyageNumber": "VOY-2025-001",
@@ -567,6 +592,7 @@ Track the current load on a voyage (in TEU) and allow ops to manually stop accep
 ```
 
 **TEU calculation:**
+
 - TWENTY_FOOT = 1 TEU
 - FORTY_FOOT = 2 TEU
 - Only count orders with status `PENDING`, `CONFIRMED`, or `IN_TRANSIT`
@@ -574,10 +600,11 @@ Track the current load on a voyage (in TEU) and allow ops to manually stop accep
 **Business rules:**
 
 - When `bookingOpen` is `false`, `FreightOrderService.createOrder()` must reject new orders (return
-  409)
+    409)
 - Manual toggle via PATCH overrides everything
 
 **Acceptance criteria:**
+
 - [ ] Load endpoint returns correct TEU count and utilization
 - [ ] Ops can manually close/open bookings
 - [ ] Closed voyages reject new freight orders with 409
@@ -594,9 +621,11 @@ Track the current load on a voyage (in TEU) and allow ops to manually stop accep
 Automatically close bookings when a voyage reaches a configurable capacity threshold.
 
 **Configuration:**
+
 - Add `app.booking.auto-cutoff-percent` to `application.properties` (default: 95)
 
 **Behavior:**
+
 - After every successful `createOrder()`, check current load vs `maxCapacityTeu`
 - If `currentLoadTeu / maxCapacityTeu >= threshold`, automatically set `bookingOpen = false`
 - Log a warning when auto-cutoff triggers
@@ -608,6 +637,7 @@ Automatically close bookings when a voyage reaches a configurable capacity thres
   a clear message explaining remaining TEU
 
 **Acceptance criteria:**
+
 - [ ] Auto-cutoff triggers at the configured threshold
 - [ ] Orders that would exceed remaining TEU are rejected
 - [ ] Manual reopen still works after auto-cutoff
@@ -625,6 +655,7 @@ A vessel can have multiple owners with different ownership shares. This is neede
 splitting after a voyage.
 
 **New entity: `VesselOwner`**
+
 - `id`, `createdAt`, `updatedAt` (from BaseEntity)
 - `vesselId` (FK to Vessel)
 - `ownerName` (String, required)
@@ -634,15 +665,18 @@ splitting after a voyage.
 **Constraint:** The sum of all `sharePercent` values for a vessel must not exceed 100.
 
 **New endpoints:**
+
 - `POST /api/v1/vessels/{vesselId}/owners` — add an owner
 - `GET /api/v1/vessels/{vesselId}/owners` — list owners with shares
 - `DELETE /api/v1/vessels/{vesselId}/owners/{ownerId}` — remove an owner
 
 **Validation rules:**
+
 - Adding an owner that would push total above 100% returns 409
 - `sharePercent` must be greater than 0
 
 **Acceptance criteria:**
+
 - [ ] Multiple owners can be added per vessel
 - [ ] Share total cannot exceed 100%
 - [ ] Owners can be listed and removed
@@ -660,17 +694,20 @@ After a voyage is `COMPLETED`, generate a financial summary showing revenue, cos
 per vessel owner.
 
 **New entity: `VoyageCost`**
+
 - `id`, `createdAt`, `updatedAt` (from BaseEntity)
 - `voyageId` (FK to Voyage)
 - `description` (String — e.g. "Fuel", "Port fees", "Crew")
 - `amountUsd` (BigDecimal)
 
 **New endpoints:**
+
 - `POST /api/v1/voyages/{voyageId}/costs` — add a cost line item
 - `GET /api/v1/voyages/{voyageId}/costs` — list cost items
 - `GET /api/v1/voyages/{voyageId}/financial-summary` — full breakdown
 
 **Financial summary response:**
+
 ```json
 {
   "voyageNumber": "VOY-2025-001",
@@ -698,6 +735,7 @@ per vessel owner.
 ```
 
 **Business rules:**
+
 - Revenue = sum of `finalPriceUsd` from all `DELIVERED` freight orders on the voyage
 - Costs = sum of all `VoyageCost` items
 - Profit = Revenue - Costs
@@ -705,6 +743,7 @@ per vessel owner.
 - Summary can only be generated for `COMPLETED` voyages (return 409 otherwise)
 
 **Acceptance criteria:**
+
 - [ ] Costs can be added and listed
 - [ ] Financial summary calculates correctly
 - [ ] Profit splits match owner share percentages
@@ -722,6 +761,7 @@ Replace the free-text `orderedBy` field with a proper `Agent` entity to track in
 future external freight forwarders.
 
 **New entity: `Agent`**
+
 - `id`, `createdAt`, `updatedAt` (from BaseEntity)
 - `name` (String, required)
 - `email` (String, required)
@@ -730,12 +770,14 @@ future external freight forwarders.
 - `active` (boolean, default true)
 
 **New endpoints:**
+
 - `POST /api/v1/agents` — create
 - `GET /api/v1/agents` — list (optional filter by `type` and `active`)
 - `GET /api/v1/agents/{id}` — get by ID
 - `PATCH /api/v1/agents/{id}` — update commission rate or active status
 
 **Update `FreightOrder`:**
+
 - Replace `orderedBy` (String) with `agentId` (FK to Agent)
 - Update DTOs and existing tests accordingly
 
@@ -743,6 +785,7 @@ future external freight forwarders.
 description. For the POC, dropping and recreating is fine — document it.
 
 **Acceptance criteria:**
+
 - [ ] Agent CRUD works with type and active filters
 - [ ] Freight orders now reference an agent
 - [ ] Existing `FreightOrderController` and tests updated
@@ -759,9 +802,11 @@ description. For the POC, dropping and recreating is fine — document it.
 After a voyage is `COMPLETED`, calculate each agent's commission from the orders they placed.
 
 **New endpoint:**
+
 - `GET /api/v1/voyages/{voyageId}/commissions` — agent commission breakdown
 
 **Commission report response:**
+
 ```json
 {
   "voyageNumber": "VOY-2025-001",
@@ -795,6 +840,7 @@ After a voyage is `COMPLETED`, calculate each agent's commission from the orders
 - Only `COMPLETED` voyages (return 409 otherwise)
 
 **Acceptance criteria:**
+
 - [ ] Commission calculates correctly per agent
 - [ ] Mixed internal/external agents handled
 - [ ] Returns 409 for non-completed voyages
@@ -811,20 +857,24 @@ After a voyage is `COMPLETED`, calculate each agent's commission from the orders
 Add ability to email each agent their commission statement after a voyage completes.
 
 **New endpoint:**
+
 - `POST /api/v1/voyages/{voyageId}/commissions/send` — calculates and emails each agent
 
 **Behavior:**
+
 - For each agent with orders on the voyage, generate a summary and email it
 - Email subject: `Commission Statement — Voyage VOY-XXXX`
 - Body: text summary of their orders, total value, commission earned
 - Optional: attach a PDF (reuse PDF generation pattern from `INV-001`)
 
 **Business rules:**
+
 - Only for `COMPLETED` voyages
 - Only sends to active agents
 - Returns a summary of how many emails were sent
 
 **Response:**
+
 ```json
 {
   "voyageNumber": "VOY-2025-001",
@@ -834,6 +884,7 @@ Add ability to email each agent their commission statement after a voyage comple
 ```
 
 **Acceptance criteria:**
+
 - [ ] Emails sent to each active agent with orders
 - [ ] Inactive agents are skipped
 - [ ] Returns 409 for non-completed voyages
@@ -850,6 +901,7 @@ Add a reusable service that generates Code 128 barcodes and QR codes as PNG byte
 foundation for all tracking and label features.
 
 **Setup:**
+
 - Add ZXing (Zebra Crossing) dependency to `pom.xml`:
   ```xml
   <dependency>
@@ -867,12 +919,14 @@ foundation for all tracking and label features.
 **What to create:**
 
 **`BarcodeService`** with two methods:
+
 - `byte[] generateBarcode(String content, int width, int height)` — Code 128 linear barcode
 - `byte[] generateQrCode(String content, int width, int height)` — QR code
 
 Both return a PNG image as `byte[]`.
 
 **New endpoints (for testing/demo):**
+
 - `GET /api/v1/barcodes/code128?content=MSCU1234567&width=300&height=80` — returns PNG
 - `GET /api/v1/barcodes/qr?content=https://example.com/track/FO-001&width=250&height=250` — returns
   PNG
@@ -880,11 +934,13 @@ Both return a PNG image as `byte[]`.
 Set `Content-Type: image/png` on the response.
 
 **Hints:**
+
 - Use `MultiFormatWriter` from ZXing for generation
 - Use `MatrixToImageWriter` from `zxing-javase` to convert `BitMatrix` → PNG bytes
 - Keep the service stateless and injectable — other issues will depend on it
 
 **Acceptance criteria:**
+
 - [ ] ZXing dependencies added
 - [ ] `BarcodeService` generates both Code 128 and QR code as PNG
 - [ ] Demo endpoints return valid images
@@ -902,10 +958,12 @@ Create a public-facing, read-only endpoint that lets anyone check the status of 
 container by its code. This is the URL that QR codes will point to.
 
 **New endpoints:**
+
 - `GET /api/v1/track/order/{orderId}` — track a freight order
 - `GET /api/v1/track/container/{containerCode}` — track a container across all its voyages
 
 **Order tracking response:**
+
 ```json
 {
   "orderId": 42,
@@ -924,6 +982,7 @@ container by its code. This is the URL that QR codes will point to.
 ```
 
 **Container tracking response:**
+
 ```json
 {
   "containerCode": "MSCU1234567",
@@ -951,16 +1010,19 @@ container by its code. This is the URL that QR codes will point to.
 ```
 
 **What to create:**
+
 - `TrackingController` — separate controller, no auth required
 - `TrackingService` — queries orders/containers and assembles the response
 - `OrderTrackingResponse` and `ContainerTrackingResponse` DTOs
 
 **Business rules:**
+
 - These endpoints are read-only, no mutations
 - Return 404 with a clear message if order or container not found
 - Container tracking shows all voyages (via freight orders), sorted by departure time
 
 **Acceptance criteria:**
+
 - [ ] Order tracking returns current status and voyage info
 - [ ] Container tracking returns full voyage history
 - [ ] 404 for unknown order ID or container code
@@ -977,9 +1039,11 @@ container by its code. This is the URL that QR codes will point to.
 Generate a printable container label PDF that port and warehouse staff can scan.
 
 **New endpoint:**
+
 - `GET /api/v1/containers/{id}/label` — returns PDF (Content-Type: `application/pdf`)
 
 **Label should include:**
+
 - Container code as both human-readable text and Code 128 barcode
 - QR code encoding the tracking URL: `{app.base-url}/api/v1/track/container/{containerCode}`
 - Container size and type
@@ -987,12 +1051,14 @@ Generate a printable container label PDF that port and warehouse staff can scan.
   departure/arrival ports, departure date
 
 **Technical hints:**
+
 - Use the same PDF library from `INV-001` (OpenPDF recommended)
 - Inject `BarcodeService` from `TRK-001` to generate barcode/QR images
 - Embed the PNG images into the PDF using the library's image API
 - Add `app.base-url` to `application.properties` (default: `http://localhost:8080`)
 
 **Label layout suggestion:**
+
 ```
 ┌──────────────────────────────────┐
 │  MSCU1234567                     │
@@ -1013,6 +1079,7 @@ Generate a printable container label PDF that port and warehouse staff can scan.
 ```
 
 **Acceptance criteria:**
+
 - [ ] PDF generates with barcode and QR code
 - [ ] QR code encodes the correct tracking URL
 - [ ] Voyage info shown if container is on an active booking
@@ -1030,16 +1097,19 @@ Generate a printable container label PDF that port and warehouse staff can scan.
 Add a QR code to the invoice PDF that links to the order tracking page.
 
 **Changes to `InvoiceService` (from `INV-001`):**
+
 - After the existing invoice content, add a QR code in the bottom-right area
 - QR encodes: `{app.base-url}/api/v1/track/order/{orderId}`
 - Add small label text below the QR: "Scan to track your shipment"
 
 **Technical hints:**
+
 - Inject `BarcodeService` from `TRK-001`
 - Generate QR as `byte[]`, embed as image in the PDF
 - Keep it small (e.g. 100x100 px) so it doesn't dominate the invoice layout
 
 **Acceptance criteria:**
+
 - [ ] Invoice PDF now includes a QR code
 - [ ] QR encodes the correct tracking URL
 - [ ] Existing invoice tests still pass
@@ -1057,6 +1127,7 @@ Log status changes and scan events to build a full audit trail for each freight 
 backbone of shipment visibility.
 
 **New entity: `TrackingEvent`**
+
 - `id`, `createdAt`, `updatedAt` (from BaseEntity)
 - `freightOrderId` (FK to FreightOrder)
 - `eventType` (enum: `STATUS_CHANGE`, `GATE_IN`, `GATE_OUT`, `LOADED`, `DISCHARGED`,
@@ -1067,6 +1138,7 @@ backbone of shipment visibility.
 - `eventTime` (LocalDateTime — when it actually happened, may differ from `createdAt`)
 
 **New endpoints:**
+
 - `POST /api/v1/freight-orders/{id}/events` — log a new tracking event
 - `GET /api/v1/freight-orders/{id}/events` — list all events for an order (sorted by `eventTime`
   ascending)
@@ -1078,9 +1150,11 @@ backbone of shipment visibility.
 - Manual events (gate scans, notes) are added via the POST endpoint
 
 **Update tracking endpoint (`TRK-002`):**
+
 - Add an `events` array to the order tracking response so the tracking page shows the full timeline
 
 **Event list response:**
+
 ```json
 [
   {
@@ -1115,6 +1189,7 @@ backbone of shipment visibility.
 ```
 
 **Acceptance criteria:**
+
 - [ ] Manual events can be logged via POST
 - [ ] Status changes automatically create events
 - [ ] Events listed in chronological order
@@ -1133,9 +1208,11 @@ Generate a gate pass document that authorizes a container to enter or leave a po
 a standard document in freight operations.
 
 **New endpoint:**
+
 - `GET /api/v1/freight-orders/{id}/gate-pass` — returns PDF (Content-Type: `application/pdf`)
 
 **Gate pass should include:**
+
 - Gate pass number (auto-generated, e.g. `GP-2025-00042`)
 - QR code encoding the tracking URL for the order
 - Container code with Code 128 barcode
@@ -1148,9 +1225,11 @@ a standard document in freight operations.
 - Large bold text: `GATE IN` or `GATE OUT` (request param: `direction=IN|OUT`)
 
 **New endpoint parameter:**
+
 - `GET /api/v1/freight-orders/{id}/gate-pass?direction=IN`
 
 **Gate pass layout suggestion:**
+
 ```
 ┌─────────────────────────────────────┐
 │         *** GATE IN PASS ***        │
@@ -1175,11 +1254,13 @@ a standard document in freight operations.
 ```
 
 **Business rules:**
+
 - Gate pass can only be generated for orders with status `PENDING`, `CONFIRMED`, or `IN_TRANSIT`
 - Return 409 if order is `CANCELLED` or `DELIVERED`
 - `direction` parameter is required, return 400 if missing
 
 **Acceptance criteria:**
+
 - [ ] PDF generates with both barcode and QR code
 - [ ] Direction (IN/OUT) shown prominently
 - [ ] Valid date range calculated from voyage departure
@@ -1200,6 +1281,7 @@ without leaking provider details into business logic.
 **What to create:**
 
 **Interface: `AiClient`**
+
 ```java
 public interface AiClient {
   String complete(String systemPrompt, String userPrompt);
@@ -1207,12 +1289,14 @@ public interface AiClient {
 ```
 
 **Implementations (pick one as default, wire via Spring profile):**
+
 - `ClaudeAiClient` — calls Anthropic Messages API
 - `OpenAiClient` — calls OpenAI Chat Completions API
 
 Use `RestClient` (Spring 6.1+) for HTTP calls. No SDK dependencies — keep it lean.
 
 **Configuration:**
+
 ```properties
 # application.properties
 app.ai.provider=claude            # or "openai" or "ollama"
@@ -1229,16 +1313,19 @@ app.ai.base-url=https://api.anthropic.com
 - Create an `AiConfig` class that reads properties and builds the active client bean
 
 **New endpoint (for smoke testing):**
+
 - `POST /api/v1/ai/test` — accepts `{ "prompt": "..." }`, returns raw LLM response
 - This endpoint should be disabled in production via a property flag
 
 **Hints:**
+
 - Don't add SDKs — just raw HTTP with `RestClient`
 - Always set a timeout (30s suggested)
 - Log token usage if the provider returns it
 - Add a `NoOpAiClient` implementation that returns a canned response — useful for tests
 
 **Acceptance criteria:**
+
 - [ ] `AiClient` interface defined
 - [ ] At least one real provider implemented (Claude or OpenAI)
 - [ ] `NoOpAiClient` available for tests
@@ -1259,6 +1346,7 @@ When setting a voyage price, the system should suggest a price range based on hi
 data from past voyages on the same or similar routes.
 
 **New endpoint:**
+
 - `GET /api/v1/voyages/{voyageId}/price-suggestion?containerSize=TWENTY_FOOT`
 
 **How it works:**
@@ -1276,6 +1364,7 @@ data from past voyages on the same or similar routes.
 - `PriceSuggestionResponse` DTO
 
 **Response:**
+
 ```json
 {
   "voyageNumber": "VOY-2025-010",
@@ -1293,6 +1382,7 @@ data from past voyages on the same or similar routes.
 ```
 
 **Prompt engineering hints:**
+
 - Include structured data in the prompt (route, dates, prices as a table)
 - Ask for JSON output with specific fields
 - Include instructions: "If fewer than 3 data points, set confidence to LOW and note insufficient
@@ -1300,6 +1390,7 @@ data from past voyages on the same or similar routes.
 - Ask the LLM to explain its reasoning in 2–3 sentences
 
 **Confidence levels:**
+
 - `HIGH` — 10+ data points, consistent pricing, same route
 - `MEDIUM` — 3–9 data points or similar (not identical) routes used
 - `LOW` — fewer than 3 data points or no matching routes
@@ -1311,6 +1402,7 @@ data from past voyages on the same or similar routes.
 - Route has data but only for the other container size → note this in reasoning
 
 **Acceptance criteria:**
+
 - [ ] Endpoint returns a structured price suggestion
 - [ ] Historical data gathered correctly from past voyages
 - [ ] Confidence level reflects data quality
@@ -1331,6 +1423,7 @@ pricing against the broader market.
 **What to create:**
 
 **Interface: `MarketDataProvider`**
+
 ```java
 public interface MarketDataProvider {
   Optional<MarketRate> getCurrentRate(String originPort, String destPort, ContainerSize size);
@@ -1338,6 +1431,7 @@ public interface MarketDataProvider {
 ```
 
 **`MarketRate` DTO:**
+
 ```java
 public class MarketRate {
   private BigDecimal spotRateUsd;
@@ -1348,16 +1442,19 @@ public class MarketRate {
 ```
 
 **Implementations:**
+
 - `FreightosMarketDataProvider` — calls Freightos FBX API (free tier available)
 - `StaticMarketDataProvider` — returns hardcoded sample rates for demo/testing
 
 **Configuration:**
+
 ```properties
 app.market-data.provider=static   # or "freightos"
 app.market-data.api-key=${MARKET_DATA_API_KEY}
 ```
 
 **Update `PriceSuggestionService` (from `AIP-002`):**
+
 - Before calling the LLM, fetch current market rate
 - Include it in the prompt: "The current market spot rate for this route is $X/TEU as of [date]"
 - Update the response DTO:
@@ -1379,6 +1476,7 @@ app.market-data.api-key=${MARKET_DATA_API_KEY}
 ```
 
 **Acceptance criteria:**
+
 - [ ] Market data provider abstraction defined
 - [ ] At least `StaticMarketDataProvider` implemented
 - [ ] Market rate included in LLM prompt and response
@@ -1399,6 +1497,7 @@ suggestion. The LLM synthesizes news headlines into risk factors that may affect
 **What to create:**
 
 **Interface: `NewsProvider`**
+
 ```java
 public interface NewsProvider {
   List<NewsItem> getRecentHeadlines(String route, int maxResults);
@@ -1406,6 +1505,7 @@ public interface NewsProvider {
 ```
 
 **`NewsItem` DTO:**
+
 ```java
 public class NewsItem {
   private String headline;
@@ -1416,16 +1516,19 @@ public class NewsItem {
 ```
 
 **Implementations:**
+
 - `RssNewsProvider` — fetches from public RSS feeds (e.g. Lloyd's List, The Loadstar, gCaptain)
 - `StaticNewsProvider` — returns sample headlines for demo/testing
 
 **Configuration:**
+
 ```properties
 app.news.provider=static   # or "rss"
 app.news.feeds=https://gcaptain.com/feed/,https://theloadstar.com/feed/
 ```
 
 **Update `PriceSuggestionService`:**
+
 - Fetch recent headlines relevant to the route (keyword matching on port names, regions)
 - Include top 5 headlines in the LLM prompt
 - Ask the LLM to identify risk factors and their potential impact on pricing
@@ -1456,6 +1559,7 @@ app.news.feeds=https://gcaptain.com/feed/,https://theloadstar.com/feed/
 as "risk factors to consider" not "price will go up 15%."
 
 **Acceptance criteria:**
+
 - [ ] News provider abstraction defined
 - [ ] At least `StaticNewsProvider` implemented
 - [ ] Risk factors included in suggestion response
@@ -1475,15 +1579,18 @@ Combine all available intelligence into a single endpoint that assembles whateve
 available and produces the richest possible suggestion.
 
 **Update endpoint:**
+
 - `GET /api/v1/voyages/{voyageId}/price-intelligence?containerSize=TWENTY_FOOT`
 
 This replaces / wraps the endpoint from `AIP-002`. It gracefully degrades:
+
 - If only historical data is available → Tier 1 suggestion
 - If market data is configured → Tier 2 enriched suggestion
 - If news feeds are configured → Tier 3 with risk factors
 - Response always indicates which data sources were used
 
 **Full response:**
+
 ```json
 {
   "voyageNumber": "VOY-2025-010",
@@ -1530,6 +1637,7 @@ This replaces / wraps the endpoint from `AIP-002`. It gracefully degrades:
 - If `AiClient` itself fails, return 503 with a message
 
 **Acceptance criteria:**
+
 - [ ] Endpoint assembles all available data sources
 - [ ] Gracefully degrades when sources are unavailable
 - [ ] `dataSources` accurately reflects what was used
