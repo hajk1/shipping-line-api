@@ -86,7 +86,7 @@ public class VoyageResponse {
     return arrivalTime;
   }
 
-  public void setArrivalDate(LocalDateTime departureTime) {
+  public void setArrivalDate(LocalDateTime arrivalTime) {
     this.arrivalTime = arrivalTime;
   }
 

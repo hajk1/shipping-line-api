@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.PriceSuggestionConfidence;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PriceSuggestionResponse {
   private String voyageNumber;
@@ -17,6 +19,7 @@ public class PriceSuggestionResponse {
   private BigDecimal historicalAvgUsd;
   private BigDecimal historicalMinUsd;
   private BigDecimal historicalMaxUsd;
+  private List<RiskFactor> riskFactors;
 
   public String getVoyageNumber() {
     return voyageNumber;
@@ -111,6 +114,14 @@ public class PriceSuggestionResponse {
     this.historicalMaxUsd = historicalMaxUsd;
   }
 
+  public List<RiskFactor> getRiskFactors() {
+    return riskFactors;
+  }
+
+  public void setRiskFactors(List<RiskFactor> riskFactors) {
+    this.riskFactors = riskFactors;
+  }
+
   /** Creates a fallback response for no-data or parse-failure scenarios. */
   public static PriceSuggestionResponse fallback(
       String voyageNumber, String route, ContainerSize containerSize, String reasoning) {
@@ -126,6 +137,7 @@ public class PriceSuggestionResponse {
     response.setHistoricalAvgUsd(null);
     response.setHistoricalMinUsd(null);
     response.setHistoricalMaxUsd(null);
+    response.setRiskFactors(new ArrayList<>());
     return response;
   }
 }

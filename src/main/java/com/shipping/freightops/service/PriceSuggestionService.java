@@ -16,7 +16,7 @@ import com.shipping.freightops.repository.FreightOrderRepository;
 import com.shipping.freightops.repository.PortRepository;
 import com.shipping.freightops.repository.VoyagePriceRepository;
 import com.shipping.freightops.repository.VoyageRepository;
-import com.shipping.freightops.schema.PriceSuggestionSchemaBuilder;
+import com.shipping.freightops.schema.CompositeSchemaBuilder;
 import com.shipping.freightops.util.CountryRegionMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -43,6 +43,7 @@ public class PriceSuggestionService {
   private final PortRepository portRepository;
   private final AiClient aiClient;
   private final ObjectMapper objectMapper;
+  private final RiskAnalysisService riskAnalysisService;
   private final String schemaJson;
   private final JsonSchema jsonSchema;
   private final String systemPrompt;
@@ -54,15 +55,17 @@ public class PriceSuggestionService {
       PortRepository portRepository,
       AiClient aiClient,
       ObjectMapper objectMapper,
-      PriceSuggestionSchemaBuilder schemaBuilder) {
+      RiskAnalysisService riskAnalysisService,
+      CompositeSchemaBuilder compositeSchemaBuilder) {
     this.voyageRepository = voyageRepository;
     this.voyagePriceRepository = voyagePriceRepository;
     this.freightOrderRepository = freightOrderRepository;
     this.portRepository = portRepository;
     this.aiClient = aiClient;
     this.objectMapper = objectMapper;
+    this.riskAnalysisService = riskAnalysisService;
     try {
-      this.schemaJson = schemaBuilder.build();
+      this.schemaJson = compositeSchemaBuilder.buildCompositeSchema();
       this.systemPrompt = loadSystemPrompt();
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load price suggestion resources", e);
@@ -176,6 +179,11 @@ public class PriceSuggestionService {
     StringBuilder sb = new StringBuilder();
     sb.append("Route: ").append(route).append("\n");
     sb.append("Container size for which to suggest price: ").append(containerSize).append("\n\n");
+    String newsContext = riskAnalysisService.fetchAndBuildNewsContext(route);
+    if (!newsContext.isEmpty()) {
+      sb.append(newsContext);
+    }
+
     sb.append("Historical data:\n");
     sb.append("voyageNumber | departureDate | priceUsd | orderCount | containerSize\n");
     sb.append("-------------|---------------|----------|------------|---------------\n");
@@ -228,6 +236,7 @@ public class PriceSuggestionService {
     response.setHistoricalAvgUsd(computeAvg(historicalPrices));
     response.setHistoricalMinUsd(computeMin(historicalPrices));
     response.setHistoricalMaxUsd(computeMax(historicalPrices));
+    response.setRiskFactors(riskAnalysisService.parseRiskFactors(parsed));
 
     return response;
   }

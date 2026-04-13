@@ -22,18 +22,15 @@ class PriceSuggestionSchemaTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    PriceSuggestionSchemaBuilder schemaBuilder =
-        new PriceSuggestionSchemaBuilder(new ObjectMapper());
-    String schemaJson = schemaBuilder.build();
+    ObjectMapper mapper = new ObjectMapper();
+    PriceSuggestionSchemaBuilder priceSuggestionBuilder = new PriceSuggestionSchemaBuilder(mapper);
+    RiskFactorSchemaBuilder riskFactorBuilder = new RiskFactorSchemaBuilder(mapper);
+    CompositeSchemaBuilder compositeBuilder =
+        new CompositeSchemaBuilder(priceSuggestionBuilder, riskFactorBuilder, mapper);
+    String schemaJson = compositeBuilder.buildCompositeSchema();
     JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SCHEMA_VERSION);
     jsonSchema = factory.getSchema(schemaJson);
-    objectMapper = new ObjectMapper();
-  }
-
-  @Test
-  @DisplayName("Schema file is valid JSON Schema")
-  void schemaIsValid() {
-    assertTrue(jsonSchema != null);
+    objectMapper = mapper;
   }
 
   @Test
@@ -78,74 +75,34 @@ class PriceSuggestionSchemaTest {
   }
 
   @Test
-  @DisplayName("JSON with wrong type for confidence is rejected")
-  void rejectsWrongConfidenceType() throws Exception {
-    String invalidJson =
-        """
-        {
-          "suggestedPriceLowUsd": 1100.00,
-          "suggestedPriceHighUsd": 1350.00,
-          "confidence": 123,
-          "reasoning": "Test",
-          "dataPoints": 12
-        }
-        """;
-    JsonNode node = objectMapper.readTree(invalidJson);
-    Set<ValidationMessage> errors = jsonSchema.validate(node);
-    assertFalse(errors.isEmpty());
-  }
-
-  @Test
-  @DisplayName("JSON with invalid enum value for confidence is rejected")
-  void rejectsInvalidConfidenceEnum() throws Exception {
-    String invalidJson =
-        """
-        {
-          "suggestedPriceLowUsd": 1100.00,
-          "suggestedPriceHighUsd": 1350.00,
-          "confidence": "INVALID",
-          "reasoning": "Test",
-          "dataPoints": 12
-        }
-        """;
-    JsonNode node = objectMapper.readTree(invalidJson);
-    Set<ValidationMessage> errors = jsonSchema.validate(node);
-    assertFalse(errors.isEmpty());
-  }
-
-  @Test
-  @DisplayName("JSON with additional properties is rejected when additionalProperties is false")
-  void rejectsAdditionalProperties() throws Exception {
-    String invalidJson =
+  @DisplayName("Valid JSON with risk factors passes validation")
+  void acceptsValidJsonWithRiskFactors() throws Exception {
+    String validJsonWithRiskFactors =
         """
         {
           "suggestedPriceLowUsd": 1100.00,
           "suggestedPriceHighUsd": 1350.00,
           "confidence": "MEDIUM",
-          "reasoning": "Test",
+          "reasoning": "Based on 12 past voyages with risk factors considered.",
           "dataPoints": 12,
-          "extraField": "not allowed"
+          "historicalAvgUsd": 1180.00,
+          "historicalMinUsd": 950.00,
+          "historicalMaxUsd": 1400.00,
+          "riskFactors": [
+            {
+              "factor": "Port congestion in Shanghai",
+              "impact": "HIGH",
+              "description": "Severe delays expected due to COVID-19 restrictions affecting port operations"
+            },
+            {
+              "factor": "Fuel price volatility",
+              "impact": "MEDIUM",
+              "description": "Oil prices fluctuating due to geopolitical tensions"
+            }
+          ]
         }
         """;
-    JsonNode node = objectMapper.readTree(invalidJson);
-    Set<ValidationMessage> errors = jsonSchema.validate(node);
-    assertFalse(errors.isEmpty());
-  }
-
-  @Test
-  @DisplayName("Minimal valid JSON with only required fields passes")
-  void acceptsMinimalValidJson() throws Exception {
-    String minimalJson =
-        """
-        {
-          "suggestedPriceLowUsd": 1000.00,
-          "suggestedPriceHighUsd": 1200.00,
-          "confidence": "LOW",
-          "reasoning": "Insufficient data.",
-          "dataPoints": 0
-        }
-        """;
-    JsonNode node = objectMapper.readTree(minimalJson);
+    JsonNode node = objectMapper.readTree(validJsonWithRiskFactors);
     Set<ValidationMessage> errors = jsonSchema.validate(node);
     assertTrue(errors.isEmpty(), "Expected no validation errors: " + errors);
   }

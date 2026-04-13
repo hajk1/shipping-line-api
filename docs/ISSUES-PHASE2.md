@@ -1500,14 +1500,14 @@ suggestion. The LLM synthesizes news headlines into risk factors that may affect
 
 ```java
 public interface NewsProvider {
-  List<NewsItem> getRecentHeadlines(String route, int maxResults);
+  List<MaritimeNewsArticle> getRecentHeadlines(String route, int maxResults);
 }
 ```
 
-**`NewsItem` DTO:**
+**`MaritimeNewsArticle` DTO:**
 
 ```java
-public class NewsItem {
+public class MaritimeNewsArticle {
   private String headline;
   private String source;
   private LocalDate publishedDate;
