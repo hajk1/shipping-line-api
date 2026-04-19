@@ -6,8 +6,11 @@ import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.shipping.freightops.config.AppProperties;
 import com.shipping.freightops.dto.ContainerLabelResponse;
+import com.shipping.freightops.dto.CreateContainerRequest;
 import com.shipping.freightops.entity.Container;
 import com.shipping.freightops.entity.FreightOrder;
+import com.shipping.freightops.enums.ContainerSize;
+import com.shipping.freightops.enums.ContainerType;
 import com.shipping.freightops.enums.OrderStatus;
 import com.shipping.freightops.exception.PdfGenerationException;
 import com.shipping.freightops.repository.ContainerRepository;
@@ -15,6 +18,7 @@ import com.shipping.freightops.repository.FreightOrderRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +59,39 @@ public class ContainerService {
     this.freightOrderRepository = freightOrderRepository;
     this.containerRepository = containerRepository;
     this.appProperties = appProperties;
+  }
+
+  @Transactional
+  public Container createContainer(CreateContainerRequest request) {
+    if (containerRepository.existsByContainerCode(request.getContainerCode())) {
+      throw new IllegalStateException(
+          "Container code already exists: " + request.getContainerCode());
+    }
+
+    Container container =
+        new Container(request.getContainerCode(), request.getSize(), request.getType());
+    return containerRepository.save(container);
+  }
+
+  @Transactional(readOnly = true)
+  public List<Container> getAllContainers(ContainerSize size, ContainerType type) {
+    if (size != null && type != null) {
+      return containerRepository.findBySizeAndType(size, type);
+    }
+    if (size != null) {
+      return containerRepository.findBySize(size);
+    }
+    if (type != null) {
+      return containerRepository.findByType(type);
+    }
+    return containerRepository.findAll();
+  }
+
+  @Transactional(readOnly = true)
+  public Container getContainerById(Long id) {
+    return containerRepository
+        .findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("Container not found: " + id));
   }
 
   @Transactional(readOnly = true)
