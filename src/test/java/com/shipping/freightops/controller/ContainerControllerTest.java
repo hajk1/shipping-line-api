@@ -1,10 +1,17 @@
 package com.shipping.freightops.controller;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shipping.freightops.dto.CreateContainerRequest;
 import com.shipping.freightops.entity.*;
 import com.shipping.freightops.enums.AgentType;
 import com.shipping.freightops.enums.ContainerSize;
@@ -31,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ContainerControllerTest {
   @Autowired private MockMvc mockMvc;
+  @Autowired private ObjectMapper objectMapper;
   @Autowired private ContainerRepository containerRepository;
   @Autowired private VoyageRepository voyageRepository;
   @Autowired private VesselRepository vesselRepository;
@@ -41,14 +49,12 @@ public class ContainerControllerTest {
 
   private Container savedContainer;
   private Voyage activeVoyage;
-  private Voyage historicalVoyage;
   private Customer savedCustomer;
   private Agent savedAgent;
 
   @BeforeEach
   void setUp() {
-
-    // Container
+    // Container for PDF label test
     savedContainer =
         containerRepository.save(
             new Container("TSTU1234567", ContainerSize.TWENTY_FOOT, ContainerType.DRY));
@@ -123,9 +129,139 @@ public class ContainerControllerTest {
   }
 
   @Test
+  @DisplayName("POST /api/v1/containers → 201 Created")
+  void createContainer_returnsCreated() throws Exception {
+    CreateContainerRequest request = new CreateContainerRequest();
+    request.setContainerCode("WXYZ9876543");
+    request.setSize(ContainerSize.TWENTY_FOOT);
+    request.setType(ContainerType.DRY);
+
+    mockMvc
+        .perform(
+            post("/api/v1/containers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(header().string("Location", containsString("/api/v1/containers/")))
+        .andExpect(jsonPath("$.containerCode").value("WXYZ9876543"))
+        .andExpect(jsonPath("$.size").value("TWENTY_FOOT"))
+        .andExpect(jsonPath("$.type").value("DRY"))
+        .andExpect(jsonPath("$.id").exists());
+  }
+  
+  @Test
+  @DisplayName("POST /api/v1/containers with existing containerCode → 409 Conflict")
+  void createContainer_withDuplicateCode_returnsConflict() throws Exception {
+    CreateContainerRequest request = new CreateContainerRequest();
+    request.setContainerCode("TSTU1234567"); // Same as savedContainer
+    request.setSize(ContainerSize.TWENTY_FOOT);
+    request.setType(ContainerType.DRY);
+
+    mockMvc
+        .perform(
+            post("/api/v1/containers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isConflict());
+  }
+  
+  @Test
+  @DisplayName("POST /api/v1/containers with invalid enum value → 400 Bad Request")
+  void createContainer_withInvalidEnum_returnsBadRequest() throws Exception {
+    String requestWithInvalidEnum = 
+        "{\"containerCode\":\"WXYZ9876543\",\"size\":\"INVALID_SIZE\",\"type\":\"DRY\"}";
+
+    mockMvc
+        .perform(
+            post("/api/v1/containers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestWithInvalidEnum))
+        .andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  @DisplayName("POST /api/v1/containers with invalid containerCode format → 400 Bad Request")
+  void createContainer_withInvalidContainerCode_returnsBadRequest() throws Exception {
+    CreateContainerRequest request = new CreateContainerRequest();
+    request.setContainerCode("INVALID"); // Too short, wrong format
+    request.setSize(ContainerSize.TWENTY_FOOT);
+    request.setType(ContainerType.DRY);
+
+    mockMvc
+        .perform(
+            post("/api/v1/containers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  @DisplayName("GET /api/v1/containers → 200 OK with all containers")
+  void getAllContainers_returnsOk() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/containers"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$", hasSize(4))); // We have 4 containers in setup
+  }
+  
+  @Test
+  @DisplayName("GET /api/v1/containers?size=TWENTY_FOOT → 200 OK with filtered containers")
+  void getAllContainersFilteredBySize_returnsOk() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/containers")
+            .param("size", "TWENTY_FOOT"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$", hasSize(2))) // We have 2 twenty-foot containers
+        .andExpect(jsonPath("$[0].size").value("TWENTY_FOOT"))
+        .andExpect(jsonPath("$[1].size").value("TWENTY_FOOT"));
+  }
+  
+  @Test
+  @DisplayName("GET /api/v1/containers?type=REEFER → 200 OK with filtered containers")
+  void getAllContainersFilteredByType_returnsOk() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/containers")
+            .param("type", "REEFER"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$", hasSize(1))) // We have 1 reefer container
+        .andExpect(jsonPath("$[0].type").value("REEFER"));
+  }
+  
+  @Test
+  @DisplayName("GET /api/v1/containers with invalid enum parameter → 400 Bad Request")
+  void getAllContainers_withInvalidEnum_returnsBadRequest() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/containers")
+            .param("size", "INVALID_SIZE"))
+        .andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  @DisplayName("GET /api/v1/containers/{id} → 200 OK with container")
+  void getContainerById_returnsOk() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/containers/{id}", savedContainer.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(savedContainer.getId()))
+        .andExpect(jsonPath("$.containerCode").value("TSTU1234567"))
+        .andExpect(jsonPath("$.size").value("TWENTY_FOOT"))
+        .andExpect(jsonPath("$.type").value("DRY"));
+  }
+  
+  @Test
+  @DisplayName("GET /api/v1/containers/{id} with invalid ID → 404 Not Found")
+  void getContainerById_withInvalidId_returnsNotFound() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/containers/{id}", 99999L))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
   @DisplayName("GET /api/v1/containers/{id}/label → returns valid PDF with voyage info")
   void getContainerLabel_returnsValidPdf() throws Exception {
-
     mockMvc
         .perform(get("/api/v1/containers/{id}/label", savedContainer.getId()))
         .andExpect(status().isOk())
