@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -87,7 +88,7 @@ public class FreightOrderController {
   @GetMapping
   public ResponseEntity<PageResponse<FreightOrderResponse>> list(
       @RequestParam(required = false) Long voyageId,
-      @PageableDefault(size = 20) Pageable pageable) {
+      @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
     Page<FreightOrder> orders =
         (voyageId != null)
             ? service.getOrdersByVoyage(voyageId, pageable)

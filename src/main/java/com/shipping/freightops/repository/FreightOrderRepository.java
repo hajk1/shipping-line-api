@@ -14,6 +14,37 @@ public interface FreightOrderRepository extends JpaRepository<FreightOrder, Long
 
   long countByVoyageId(Long voyageId);
 
+  @Query(
+      value =
+          "SELECT fo FROM FreightOrder fo"
+              + " JOIN FETCH fo.voyage"
+              + " JOIN FETCH fo.container"
+              + " JOIN FETCH fo.agent"
+              + " JOIN FETCH fo.customer",
+      countQuery = "SELECT COUNT(fo) FROM FreightOrder fo")
+  Page<FreightOrder> findAllWithAssociations(Pageable pageable);
+
+  @Query(
+      value =
+          "SELECT fo FROM FreightOrder fo"
+              + " JOIN FETCH fo.voyage"
+              + " JOIN FETCH fo.container"
+              + " JOIN FETCH fo.agent"
+              + " JOIN FETCH fo.customer"
+              + " WHERE fo.voyage.id = :voyageId",
+      countQuery = "SELECT COUNT(fo) FROM FreightOrder fo WHERE fo.voyage.id = :voyageId")
+  Page<FreightOrder> findByVoyageIdWithAssociations(
+      @Param("voyageId") Long voyageId, Pageable pageable);
+
+  @Query(
+      "SELECT fo FROM FreightOrder fo"
+          + " JOIN FETCH fo.voyage"
+          + " JOIN FETCH fo.container"
+          + " JOIN FETCH fo.agent"
+          + " JOIN FETCH fo.customer"
+          + " WHERE fo.id = :id")
+  Optional<FreightOrder> findByIdWithAssociations(@Param("id") Long id);
+
   Page<FreightOrder> findByVoyageId(Long voyageId, Pageable pageable);
 
   Page<FreightOrder> findByStatus(OrderStatus status, Pageable pageable);

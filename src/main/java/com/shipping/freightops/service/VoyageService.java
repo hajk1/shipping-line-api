@@ -83,35 +83,46 @@ public class VoyageService {
     this.vesselOwnerRepository = vesselOwnerRepository;
   }
 
+  @Transactional(readOnly = true)
   public List<Voyage> getAll() {
-    return voyageRepository.findAll();
+    return voyageRepository.findAllWithAssociations();
   }
 
+  @Transactional(readOnly = true)
   public List<Voyage> getAllByStatus(VoyageStatus status) {
-    return voyageRepository.findAllByStatus(status);
+    return voyageRepository.findAllByStatusWithAssociations(status);
   }
 
+  @Transactional(readOnly = true)
   public Voyage getById(Long id) {
     return voyageRepository
-        .findById(id)
+        .findByIdWithAssociations(id)
         .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
   }
 
   @Transactional
   public Voyage addVoyage(@Valid CreateVoyageRequest voyageRequest) {
     Voyage voyage = mapCreateVoyageRequestToVoyage(voyageRequest);
-    return voyageRepository.save(voyage);
+    Voyage saved = voyageRepository.save(voyage);
+    return voyageRepository
+        .findByIdWithAssociations(saved.getId())
+        .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
   }
 
+  @Transactional
   public Voyage updateStatus(VoyageStatus status, Long voyageId) {
     Voyage voyage =
         voyageRepository
             .findById(voyageId)
             .orElseThrow(() -> new IllegalArgumentException("voyage not found"));
     voyage.setStatus(status);
-    return voyageRepository.save(voyage);
+    voyageRepository.save(voyage);
+    return voyageRepository
+        .findByIdWithAssociations(voyageId)
+        .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
   }
 
+  @Transactional
   public void delete(Long voyageId) {
     boolean exists = voyageRepository.existsById(voyageId);
     if (!exists) throw new IllegalArgumentException("Voyage not found");
@@ -165,7 +176,10 @@ public class VoyageService {
             .findById(voyageId)
             .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
     voyage.setBookingOpen(request.isBookingOpen());
-    return voyageRepository.save(voyage);
+    voyageRepository.save(voyage);
+    return voyageRepository
+        .findByIdWithAssociations(voyageId)
+        .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
   }
 
   @Transactional
