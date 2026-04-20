@@ -5,6 +5,7 @@ import com.shipping.freightops.exception.PdfGenerationException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -40,6 +41,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(BadRequestException.class)
   public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex) {
     return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+  }
+
+  @ExceptionHandler(PropertyReferenceException.class)
+  public ResponseEntity<Map<String, Object>> handleInvalidSortField(PropertyReferenceException ex) {
+    return buildError(HttpStatus.BAD_REQUEST, "Invalid sort field: " + ex.getPropertyName());
   }
 
   @ExceptionHandler(HttpClientErrorException.class)

@@ -16,6 +16,29 @@ public interface VoyageRepository extends JpaRepository<Voyage, Long> {
   @Query("SELECT v FROM Voyage v WHERE v.id = :id")
   Optional<Voyage> findByIdForUpdate(@Param("id") Long id);
 
+  @Query(
+      "SELECT v FROM Voyage v"
+          + " JOIN FETCH v.vessel"
+          + " JOIN FETCH v.departurePort"
+          + " JOIN FETCH v.arrivalPort"
+          + " WHERE v.id = :id")
+  Optional<Voyage> findByIdWithAssociations(@Param("id") Long id);
+
+  @Query(
+      "SELECT v FROM Voyage v"
+          + " JOIN FETCH v.vessel"
+          + " JOIN FETCH v.departurePort"
+          + " JOIN FETCH v.arrivalPort")
+  List<Voyage> findAllWithAssociations();
+
+  @Query(
+      "SELECT v FROM Voyage v"
+          + " JOIN FETCH v.vessel"
+          + " JOIN FETCH v.departurePort"
+          + " JOIN FETCH v.arrivalPort"
+          + " WHERE v.status = :status")
+  List<Voyage> findAllByStatusWithAssociations(@Param("status") VoyageStatus status);
+
   Optional<Voyage> findByVoyageNumber(String voyageNumber);
 
   List<Voyage> findAllByStatus(VoyageStatus status);

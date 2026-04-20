@@ -143,13 +143,13 @@ public class FreightOrderService {
   @Transactional(readOnly = true)
   public FreightOrder getOrder(Long id) {
     return orderRepository
-        .findById(id)
+        .findByIdWithAssociations(id)
         .orElseThrow(() -> new IllegalArgumentException("Freight order not found: " + id));
   }
 
   @Transactional(readOnly = true)
   public Page<FreightOrder> getAllOrders(Pageable pageable) {
-    return orderRepository.findAll(pageable);
+    return orderRepository.findAllWithAssociations(pageable);
   }
 
   @Transactional(readOnly = true)
@@ -157,7 +157,7 @@ public class FreightOrderService {
     voyageRepository
         .findById(voyageId)
         .orElseThrow(() -> new IllegalArgumentException("Voyage not found"));
-    return orderRepository.findByVoyageId(voyageId, pageable);
+    return orderRepository.findByVoyageIdWithAssociations(voyageId, pageable);
   }
 
   @Transactional

@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -68,7 +69,7 @@ public class VoyageController {
   })
   @GetMapping("/{voyageId}/containers")
   public ResponseEntity<PageResponse<VoyageContainerResponse>> getAllContainersByVoyageId(
-      @PathVariable Long voyageId, @PageableDefault(size = 20) Pageable pageable) {
+      @PathVariable Long voyageId, @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
 
     Page<FreightOrder> order = freightOrderService.getOrdersByVoyage(voyageId, pageable);
     Page<VoyageContainerResponse> containers = order.map(VoyageContainerResponse::fromEntity);
@@ -131,7 +132,7 @@ public class VoyageController {
   })
   @GetMapping("/{voyageId}/prices")
   public ResponseEntity<PageResponse<VoyagePriceResponse>> getVoyagePrices(
-      @PathVariable Long voyageId, @PageableDefault(size = 20) Pageable pageable) {
+      @PathVariable Long voyageId, @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
     Page<VoyagePrice> voyagePrices = voyageService.getAllPricesByVoyageId(voyageId, pageable);
     Page<VoyagePriceResponse> mapped = voyagePrices.map(VoyagePriceResponse::fromEntity);
     return ResponseEntity.ok(PageResponse.from(mapped));
