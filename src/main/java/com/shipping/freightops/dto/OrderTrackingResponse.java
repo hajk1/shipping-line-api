@@ -9,7 +9,13 @@ import com.shipping.freightops.enums.VoyageStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class OrderTrackingResponse {
   private Long orderId;
   private OrderStatus status;
@@ -43,61 +49,5 @@ public class OrderTrackingResponse {
       dto.voyageStatus = order.getVoyage().getStatus();
     }
     return dto;
-  }
-
-  public void setEvents(List<TrackingEvent> events) {
-    this.events = events;
-  }
-
-  public List<TrackingEvent> getEvents() {
-    return events;
-  }
-
-  public String getVoyageNumber() {
-    return voyageNumber;
-  }
-
-  public String getVesselName() {
-    return vesselName;
-  }
-
-  public String getDeparturePort() {
-    return departurePort;
-  }
-
-  public String getArrivalPort() {
-    return arrivalPort;
-  }
-
-  public LocalDateTime getDepartureTime() {
-    return departureTime;
-  }
-
-  public LocalDateTime getEstimatedArrival() {
-    return estimatedArrival;
-  }
-
-  public VoyageStatus getVoyageStatus() {
-    return voyageStatus;
-  }
-
-  public Long getOrderId() {
-    return orderId;
-  }
-
-  public OrderStatus getStatus() {
-    return status;
-  }
-
-  public String getContainerCode() {
-    return ContainerCode;
-  }
-
-  public ContainerSize getContainerSize() {
-    return containerSize;
-  }
-
-  public ContainerType getContainerType() {
-    return containerType;
   }
 }

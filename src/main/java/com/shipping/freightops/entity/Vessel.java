@@ -5,8 +5,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** A cargo vessel that carries containers between ports. */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "vessels")
 public class Vessel extends BaseEntity {
@@ -25,35 +31,9 @@ public class Vessel extends BaseEntity {
   @Column(nullable = false)
   private int capacityTeu;
 
-  public Vessel() {}
-
   public Vessel(String name, String imoNumber, int capacityTeu) {
     this.name = name;
     this.imoNumber = imoNumber;
-    this.capacityTeu = capacityTeu;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getImoNumber() {
-    return imoNumber;
-  }
-
-  public void setImoNumber(String imoNumber) {
-    this.imoNumber = imoNumber;
-  }
-
-  public int getCapacityTeu() {
-    return capacityTeu;
-  }
-
-  public void setCapacityTeu(int capacityTeu) {
     this.capacityTeu = capacityTeu;
   }
 }

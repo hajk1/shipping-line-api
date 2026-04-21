@@ -1,7 +1,13 @@
 package com.shipping.freightops.dto;
 
 import java.math.BigDecimal;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class OwnerFinancialShareResponse {
   private String ownerName;
   private BigDecimal sharePercent;
@@ -22,25 +28,5 @@ public class OwnerFinancialShareResponse {
     response.costShareUsd = costShareUsd;
     response.profitShareUsd = profitShareUsd;
     return response;
-  }
-
-  public String getOwnerName() {
-    return ownerName;
-  }
-
-  public BigDecimal getSharePercent() {
-    return sharePercent;
-  }
-
-  public BigDecimal getRevenueShareUsd() {
-    return revenueShareUsd;
-  }
-
-  public BigDecimal getCostShareUsd() {
-    return costShareUsd;
-  }
-
-  public BigDecimal getProfitShareUsd() {
-    return profitShareUsd;
   }
 }

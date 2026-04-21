@@ -2,8 +2,14 @@ package com.shipping.freightops.dto;
 
 import com.shipping.freightops.entity.Port;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** Read-only view of a port returned by the API. */
+@Getter
+@Setter
+@NoArgsConstructor
 public class PortResponse {
 
   private Long id;
@@ -21,25 +27,5 @@ public class PortResponse {
     dto.country = port.getCountry();
     dto.createdAt = port.getCreatedAt();
     return dto;
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public String getUnlocode() {
-    return unlocode;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getCountry() {
-    return country;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
   }
 }

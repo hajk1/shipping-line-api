@@ -4,8 +4,14 @@ import com.shipping.freightops.entity.FreightOrder;
 import com.shipping.freightops.enums.OrderStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** Read-only view of a freight order returned by the API. */
+@Getter
+@Setter
+@NoArgsConstructor
 public class FreightOrderResponse {
 
   private Long id;
@@ -43,65 +49,5 @@ public class FreightOrderResponse {
     dto.basePriceUsd = order.getBasePriceUsd();
     dto.discountReason = order.getDiscountReason();
     return dto;
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public String getVoyageNumber() {
-    return voyageNumber;
-  }
-
-  public String getContainerCode() {
-    return containerCode;
-  }
-
-  public Long getAgentId() {
-    return agentId;
-  }
-
-  public String getAgentName() {
-    return agentName;
-  }
-
-  public String getCustomerName() {
-    return customerName;
-  }
-
-  public String getCustomerEmail() {
-    return customerEmail;
-  }
-
-  public String getOrderedBy() {
-    return orderedBy;
-  }
-
-  public String getNotes() {
-    return notes;
-  }
-
-  public OrderStatus getStatus() {
-    return status;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public BigDecimal getBasePriceUsd() {
-    return basePriceUsd;
-  }
-
-  public BigDecimal getDiscountPercent() {
-    return discountPercent;
-  }
-
-  public BigDecimal getFinalPrice() {
-    return finalPrice;
-  }
-
-  public String getDiscountReason() {
-    return discountReason;
   }
 }

@@ -4,8 +4,14 @@ import com.shipping.freightops.entity.Container;
 import com.shipping.freightops.enums.ContainerSize;
 import com.shipping.freightops.enums.ContainerType;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** Read-only view of a container returned by the API. */
+@Getter
+@Setter
+@NoArgsConstructor
 public class ContainerResponse {
 
   private Long id;
@@ -25,29 +31,5 @@ public class ContainerResponse {
     dto.teu = container.getTeu();
     dto.createdAt = container.getCreatedAt();
     return dto;
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public String getContainerCode() {
-    return containerCode;
-  }
-
-  public ContainerSize getSize() {
-    return size;
-  }
-
-  public ContainerType getType() {
-    return type;
-  }
-
-  public int getTeu() {
-    return teu;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
   }
 }

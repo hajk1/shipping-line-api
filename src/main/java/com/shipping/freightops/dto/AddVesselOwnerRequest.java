@@ -6,8 +6,14 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** Payload for adding a new owner to a vessel. */
+@Getter
+@Setter
+@NoArgsConstructor
 public class AddVesselOwnerRequest {
 
   @NotBlank(message = "Owner name is required")
@@ -21,28 +27,4 @@ public class AddVesselOwnerRequest {
   @DecimalMin(value = "0.01", message = "Share percent must be greater than 0")
   @DecimalMax(value = "100.00", message = "Share percent must not exceed 100")
   private BigDecimal sharePercent;
-
-  public String getOwnerName() {
-    return ownerName;
-  }
-
-  public void setOwnerName(String ownerName) {
-    this.ownerName = ownerName;
-  }
-
-  public String getOwnerEmail() {
-    return ownerEmail;
-  }
-
-  public void setOwnerEmail(String ownerEmail) {
-    this.ownerEmail = ownerEmail;
-  }
-
-  public BigDecimal getSharePercent() {
-    return sharePercent;
-  }
-
-  public void setSharePercent(BigDecimal sharePercent) {
-    this.sharePercent = sharePercent;
-  }
 }

@@ -1,7 +1,13 @@
 package com.shipping.freightops.dto;
 
 import com.shipping.freightops.entity.Voyage;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class LoadSummaryResponse {
   private String voyageNumber;
   private int maxCapacityTeu;
@@ -25,29 +31,5 @@ public class LoadSummaryResponse {
   private static double calculateUtilization(int current, int max) {
     if (max == 0) return 0.0;
     return Math.round((current * 1000.0) / max) / 10.0;
-  }
-
-  public String getVoyageNumber() {
-    return voyageNumber;
-  }
-
-  public int getMaxCapacityTeu() {
-    return maxCapacityTeu;
-  }
-
-  public int getCurrentLoadTeu() {
-    return currentLoadTeu;
-  }
-
-  public double getUtilizationPercent() {
-    return utilizationPercent;
-  }
-
-  public boolean isBookingOpen() {
-    return bookingOpen;
-  }
-
-  public int getContainerCount() {
-    return containerCount;
   }
 }

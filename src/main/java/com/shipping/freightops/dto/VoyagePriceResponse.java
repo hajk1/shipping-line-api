@@ -4,7 +4,13 @@ import com.shipping.freightops.entity.VoyagePrice;
 import com.shipping.freightops.enums.ContainerSize;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class VoyagePriceResponse {
   private Long voyageId;
   private ContainerSize containerSize;
@@ -18,21 +24,5 @@ public class VoyagePriceResponse {
     dto.basePriceUsd = entity.getBasePriceUsd();
     dto.createdAt = entity.getCreatedAt();
     return dto;
-  }
-
-  public Long getVoyageId() {
-    return voyageId;
-  }
-
-  public ContainerSize getContainerSize() {
-    return containerSize;
-  }
-
-  public BigDecimal getBasePriceUsd() {
-    return basePriceUsd;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
   }
 }

@@ -3,8 +3,14 @@ package com.shipping.freightops.dto;
 import com.shipping.freightops.entity.VesselOwner;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** Read-only view of a vessel owner returned by the API. */
+@Getter
+@Setter
+@NoArgsConstructor
 public class VesselOwnerResponse {
 
   private Long id;
@@ -24,29 +30,5 @@ public class VesselOwnerResponse {
     dto.createdAt = owner.getCreatedAt();
     dto.updatedAt = owner.getUpdatedAt();
     return dto;
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public String getOwnerName() {
-    return ownerName;
-  }
-
-  public String getOwnerEmail() {
-    return ownerEmail;
-  }
-
-  public BigDecimal getSharePercent() {
-    return sharePercent;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
   }
 }

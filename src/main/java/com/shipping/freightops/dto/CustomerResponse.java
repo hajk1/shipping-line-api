@@ -2,7 +2,13 @@ package com.shipping.freightops.dto;
 
 import com.shipping.freightops.entity.Customer;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class CustomerResponse {
   private Long id;
   private String companyName;
@@ -22,33 +28,5 @@ public class CustomerResponse {
     dto.address = customer.getAddress();
     dto.createdAt = customer.getCreatedAt();
     return dto;
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public String getCompanyName() {
-    return companyName;
-  }
-
-  public String getContactName() {
-    return contactName;
-  }
-
-  public String getEmail() {
-    return email;
-  }
-
-  public String getPhone() {
-    return phone;
-  }
-
-  public String getAddress() {
-    return address;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
   }
 }

@@ -6,8 +6,14 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** A freight booking made by the internal ops team, assigning a container to a voyage. */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "freight_orders")
 public class FreightOrder extends BaseEntity {
@@ -67,102 +73,4 @@ public class FreightOrder extends BaseEntity {
 
   @Column(nullable = true, length = 500)
   private String discountReason;
-
-  public FreightOrder() {}
-
-  public void setEvents(List<TrackingEvent> events) {
-    this.events = events;
-  }
-
-  public List<TrackingEvent> getEvents() {
-    return events;
-  }
-
-  public String getOrderedBy() {
-    return orderedBy;
-  }
-
-  public void setOrderedBy(String orderedBy) {
-    this.orderedBy = orderedBy;
-  }
-
-  public Customer getCustomer() {
-    return customer;
-  }
-
-  public void setCustomer(Customer customer) {
-    this.customer = customer;
-  }
-
-  public Voyage getVoyage() {
-    return voyage;
-  }
-
-  public void setVoyage(Voyage voyage) {
-    this.voyage = voyage;
-  }
-
-  public Container getContainer() {
-    return container;
-  }
-
-  public void setContainer(Container container) {
-    this.container = container;
-  }
-
-  public Agent getAgent() {
-    return agent;
-  }
-
-  public void setAgent(Agent agent) {
-    this.agent = agent;
-  }
-
-  public String getNotes() {
-    return notes;
-  }
-
-  public void setNotes(String notes) {
-    this.notes = notes;
-  }
-
-  public OrderStatus getStatus() {
-    return status;
-  }
-
-  public void setStatus(OrderStatus status) {
-    this.status = status;
-  }
-
-  public BigDecimal getBasePriceUsd() {
-    return basePriceUsd;
-  }
-
-  public void setBasePriceUsd(BigDecimal basePriceUsd) {
-    this.basePriceUsd = basePriceUsd;
-  }
-
-  public BigDecimal getDiscountPercent() {
-    return discountPercent;
-  }
-
-  public void setDiscountPercent(BigDecimal discountPercent) {
-    this.discountPercent = discountPercent;
-  }
-
-  public BigDecimal getFinalPrice() {
-    return finalPrice;
-  }
-
-  public void setFinalPrice(BigDecimal finalPrice) {
-    this.finalPrice = finalPrice;
-  }
-
-  public String getDiscountReason() {
-    return discountReason;
-  }
-
-  public void setDiscountReason(String discountReason) {
-    this.discountReason = discountReason;
-  }
 }

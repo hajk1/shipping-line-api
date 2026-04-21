@@ -11,10 +11,16 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 /** An owner of a vessel with a fractional share used for cost/profit splitting. */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "vessel_owners")
 public class VesselOwner extends BaseEntity {
@@ -39,38 +45,4 @@ public class VesselOwner extends BaseEntity {
   @DecimalMax(value = "100.00")
   @Column(nullable = false, precision = 5, scale = 2)
   private BigDecimal sharePercent;
-
-  public VesselOwner() {}
-
-  public Vessel getVessel() {
-    return vessel;
-  }
-
-  public void setVessel(Vessel vessel) {
-    this.vessel = vessel;
-  }
-
-  public String getOwnerName() {
-    return ownerName;
-  }
-
-  public void setOwnerName(String ownerName) {
-    this.ownerName = ownerName;
-  }
-
-  public String getOwnerEmail() {
-    return ownerEmail;
-  }
-
-  public void setOwnerEmail(String ownerEmail) {
-    this.ownerEmail = ownerEmail;
-  }
-
-  public BigDecimal getSharePercent() {
-    return sharePercent;
-  }
-
-  public void setSharePercent(BigDecimal sharePercent) {
-    this.sharePercent = sharePercent;
-  }
 }

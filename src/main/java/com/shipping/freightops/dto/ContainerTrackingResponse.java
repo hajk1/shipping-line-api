@@ -7,7 +7,13 @@ import com.shipping.freightops.enums.ContainerType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class ContainerTrackingResponse {
   private String containerCode;
   private ContainerSize containerSize;
@@ -41,21 +47,5 @@ public class ContainerTrackingResponse {
     dto.voyages.sort((v1, v2) -> v1.getDepartureTime().compareTo(v2.getDepartureTime()));
 
     return dto;
-  }
-
-  public String getContainerCode() {
-    return containerCode;
-  }
-
-  public ContainerSize getContainerSize() {
-    return containerSize;
-  }
-
-  public ContainerType getContainerType() {
-    return containerType;
-  }
-
-  public List<VoyageTrackingResponse> getVoyages() {
-    return voyages;
   }
 }

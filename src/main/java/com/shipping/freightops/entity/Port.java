@@ -5,8 +5,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** A port of call (e.g. AEJEA - Jebel Ali, Dubai). */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "ports")
 public class Port extends BaseEntity {
@@ -24,35 +30,9 @@ public class Port extends BaseEntity {
   @Column(nullable = false)
   private String country;
 
-  public Port() {}
-
   public Port(String unlocode, String name, String country) {
     this.unlocode = unlocode;
     this.name = name;
-    this.country = country;
-  }
-
-  public String getUnlocode() {
-    return unlocode;
-  }
-
-  public void setUnlocode(String unlocode) {
-    this.unlocode = unlocode;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getCountry() {
-    return country;
-  }
-
-  public void setCountry(String country) {
     this.country = country;
   }
 }

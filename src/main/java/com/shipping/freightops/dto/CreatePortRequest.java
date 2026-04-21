@@ -2,8 +2,14 @@ package com.shipping.freightops.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** Payload for creating a new port. */
+@Getter
+@Setter
+@NoArgsConstructor
 public class CreatePortRequest {
 
   @NotBlank(message = "unlocode is required")
@@ -15,28 +21,4 @@ public class CreatePortRequest {
 
   @NotBlank(message = "country is required")
   private String country;
-
-  public String getUnlocode() {
-    return unlocode;
-  }
-
-  public void setUnlocode(String unlocode) {
-    this.unlocode = unlocode;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getCountry() {
-    return country;
-  }
-
-  public void setCountry(String country) {
-    this.country = country;
-  }
 }

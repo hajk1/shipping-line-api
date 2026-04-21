@@ -6,7 +6,13 @@ import com.shipping.freightops.enums.PriceSuggestionConfidence;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class PriceSuggestionResponse {
   private String voyageNumber;
   private String route;
@@ -21,37 +27,9 @@ public class PriceSuggestionResponse {
   private BigDecimal historicalMaxUsd;
   private List<RiskFactor> riskFactors;
 
-  public String getVoyageNumber() {
-    return voyageNumber;
-  }
-
-  public void setVoyageNumber(String voyageNumber) {
-    this.voyageNumber = voyageNumber;
-  }
-
-  public String getRoute() {
-    return route;
-  }
-
-  public void setRoute(String route) {
-    this.route = route;
-  }
-
-  public ContainerSize getContainerSize() {
-    return containerSize;
-  }
-
-  public void setContainerSize(ContainerSize containerSize) {
-    this.containerSize = containerSize;
-  }
-
   @JsonProperty("suggestedPriceLowUsd")
   public BigDecimal getSuggestedPriceLowUsd() {
     return suggestedPriceLowUsd;
-  }
-
-  public void setSuggestedPriceLowUsd(BigDecimal suggestedPriceLowUsd) {
-    this.suggestedPriceLowUsd = suggestedPriceLowUsd;
   }
 
   @JsonProperty("suggestedPriceHighUsd")
@@ -59,41 +37,9 @@ public class PriceSuggestionResponse {
     return suggestedPriceHighUsd;
   }
 
-  public void setSuggestedPriceHighUsd(BigDecimal suggestedPriceHighUsd) {
-    this.suggestedPriceHighUsd = suggestedPriceHighUsd;
-  }
-
-  public PriceSuggestionConfidence getConfidence() {
-    return confidence;
-  }
-
-  public void setConfidence(PriceSuggestionConfidence confidence) {
-    this.confidence = confidence;
-  }
-
-  public String getReasoning() {
-    return reasoning;
-  }
-
-  public void setReasoning(String reasoning) {
-    this.reasoning = reasoning;
-  }
-
-  public int getDataPoints() {
-    return dataPoints;
-  }
-
-  public void setDataPoints(int dataPoints) {
-    this.dataPoints = dataPoints;
-  }
-
   @JsonProperty("historicalAvgUsd")
   public BigDecimal getHistoricalAvgUsd() {
     return historicalAvgUsd;
-  }
-
-  public void setHistoricalAvgUsd(BigDecimal historicalAvgUsd) {
-    this.historicalAvgUsd = historicalAvgUsd;
   }
 
   @JsonProperty("historicalMinUsd")
@@ -101,25 +47,9 @@ public class PriceSuggestionResponse {
     return historicalMinUsd;
   }
 
-  public void setHistoricalMinUsd(BigDecimal historicalMinUsd) {
-    this.historicalMinUsd = historicalMinUsd;
-  }
-
   @JsonProperty("historicalMaxUsd")
   public BigDecimal getHistoricalMaxUsd() {
     return historicalMaxUsd;
-  }
-
-  public void setHistoricalMaxUsd(BigDecimal historicalMaxUsd) {
-    this.historicalMaxUsd = historicalMaxUsd;
-  }
-
-  public List<RiskFactor> getRiskFactors() {
-    return riskFactors;
-  }
-
-  public void setRiskFactors(List<RiskFactor> riskFactors) {
-    this.riskFactors = riskFactors;
   }
 
   /** Creates a fallback response for no-data or parse-failure scenarios. */

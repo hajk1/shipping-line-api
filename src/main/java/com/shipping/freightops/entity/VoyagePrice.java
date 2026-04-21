@@ -5,7 +5,13 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(
     name = "voyage_prices",
@@ -30,30 +36,4 @@ public class VoyagePrice extends BaseEntity {
   @Column(nullable = false, precision = 10, scale = 2)
   @Positive
   private BigDecimal basePriceUsd;
-
-  public VoyagePrice() {}
-
-  public Voyage getVoyage() {
-    return voyage;
-  }
-
-  public void setVoyage(Voyage voyage) {
-    this.voyage = voyage;
-  }
-
-  public ContainerSize getContainerSize() {
-    return containerSize;
-  }
-
-  public void setContainerSize(ContainerSize containerSize) {
-    this.containerSize = containerSize;
-  }
-
-  public BigDecimal getBasePriceUsd() {
-    return basePriceUsd;
-  }
-
-  public void setBasePriceUsd(BigDecimal basePriceUsd) {
-    this.basePriceUsd = basePriceUsd;
-  }
 }

@@ -1,8 +1,14 @@
 package com.shipping.freightops.dto;
 
 import com.shipping.freightops.entity.Vessel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** Read-only view of a vessel returned by the API. */
+@Getter
+@Setter
+@NoArgsConstructor
 public class VesselResponse {
   private String name;
   private String imoNumber;
@@ -15,17 +21,5 @@ public class VesselResponse {
     dto.capacityTeu = vessel.getCapacityTeu();
     dto.imoNumber = vessel.getImoNumber();
     return dto;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getImoNumber() {
-    return imoNumber;
-  }
-
-  public int getCapacityTeu() {
-    return capacityTeu;
   }
 }

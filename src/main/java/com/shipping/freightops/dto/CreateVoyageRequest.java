@@ -4,8 +4,14 @@ import com.shipping.freightops.enums.VoyageStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 // payload for creation new voyage
+@Getter
+@Setter
+@NoArgsConstructor
 public class CreateVoyageRequest {
   @NotBlank private String voyageNumber;
 
@@ -42,63 +48,5 @@ public class CreateVoyageRequest {
     this.departureTime = departureTime;
     this.arrivalTime = arrivalTime;
     this.status = status;
-  }
-
-  public VoyageStatus getStatus() {
-    return status;
-  }
-
-  public void setStatus(VoyageStatus status) {
-    this.status = status;
-  }
-
-  public CreateVoyageRequest() {}
-
-  public String getVoyageNumber() {
-    return voyageNumber;
-  }
-
-  public void setVoyageNumber(String voyageNumber) {
-    this.voyageNumber = voyageNumber;
-  }
-
-  public Long getVesselId() {
-    return vesselId;
-  }
-
-  public void setVesselId(Long vesselId) {
-    this.vesselId = vesselId;
-  }
-
-  public Long getArrivalPortId() {
-    return arrivalPortId;
-  }
-
-  public void setArrivalPortId(Long arrivalId) {
-    this.arrivalPortId = arrivalId;
-  }
-
-  public LocalDateTime getDepartureTime() {
-    return departureTime;
-  }
-
-  public void setDepartureTime(LocalDateTime departureDate) {
-    this.departureTime = departureDate;
-  }
-
-  public LocalDateTime getArrivalTime() {
-    return arrivalTime;
-  }
-
-  public void setArrivalTime(LocalDateTime arrivalDate) {
-    this.arrivalTime = arrivalDate;
-  }
-
-  public Long getDeparturePortId() {
-    return departurePortId;
-  }
-
-  public void setDeparturePortId(Long departurePortId) {
-    this.departurePortId = departurePortId;
   }
 }

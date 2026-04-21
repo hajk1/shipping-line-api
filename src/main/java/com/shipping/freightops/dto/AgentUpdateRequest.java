@@ -3,7 +3,13 @@ package com.shipping.freightops.dto;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import java.math.BigDecimal;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class AgentUpdateRequest {
 
   @DecimalMin("0.0")
@@ -11,20 +17,4 @@ public class AgentUpdateRequest {
   private BigDecimal commissionPercent;
 
   private Boolean active;
-
-  public BigDecimal getCommissionPercent() {
-    return commissionPercent;
-  }
-
-  public void setCommissionPercent(BigDecimal commissionPercent) {
-    this.commissionPercent = commissionPercent;
-  }
-
-  public Boolean getActive() {
-    return active;
-  }
-
-  public void setActive(Boolean active) {
-    this.active = active;
-  }
 }

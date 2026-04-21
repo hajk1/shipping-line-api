@@ -8,8 +8,14 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** Shared audit fields for all entities. */
+@Getter
+@Setter
+@NoArgsConstructor
 @MappedSuperclass
 public abstract class BaseEntity {
 
@@ -32,21 +38,5 @@ public abstract class BaseEntity {
   @PreUpdate
   protected void onUpdate() {
     updatedAt = LocalDateTime.now();
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
   }
 }

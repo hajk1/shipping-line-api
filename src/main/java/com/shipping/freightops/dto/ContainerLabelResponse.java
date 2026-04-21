@@ -1,5 +1,10 @@
 package com.shipping.freightops.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class ContainerLabelResponse {
   private final byte[] content;
   private final String fileName;
@@ -7,13 +12,5 @@ public class ContainerLabelResponse {
   public ContainerLabelResponse(byte[] content, String fileName) {
     this.content = content;
     this.fileName = fileName;
-  }
-
-  public byte[] getContent() {
-    return content;
-  }
-
-  public String getFileName() {
-    return fileName;
   }
 }

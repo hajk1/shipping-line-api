@@ -2,7 +2,13 @@ package com.shipping.freightops.dto;
 
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class FinancialSummaryResponse {
   private String voyageNumber;
   private BigDecimal totalRevenueUsd;
@@ -26,29 +32,5 @@ public class FinancialSummaryResponse {
     response.orderCount = orderCount;
     response.owners = owners;
     return response;
-  }
-
-  public String getVoyageNumber() {
-    return voyageNumber;
-  }
-
-  public BigDecimal getTotalRevenueUsd() {
-    return totalRevenueUsd;
-  }
-
-  public BigDecimal getTotalCostsUsd() {
-    return totalCostsUsd;
-  }
-
-  public BigDecimal getNetProfitUsd() {
-    return netProfitUsd;
-  }
-
-  public int getOrderCount() {
-    return orderCount;
-  }
-
-  public List<OwnerFinancialShareResponse> getOwners() {
-    return owners;
   }
 }

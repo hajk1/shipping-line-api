@@ -12,8 +12,14 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** A scheduled trip of a vessel from one port to another. */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "voyages")
 public class Voyage extends BaseEntity {
@@ -54,78 +60,4 @@ public class Voyage extends BaseEntity {
   private int maxCapacityTeu;
 
   @Column private boolean bookingOpen;
-
-  public Voyage() {}
-
-  public String getVoyageNumber() {
-    return voyageNumber;
-  }
-
-  public void setVoyageNumber(String voyageNumber) {
-    this.voyageNumber = voyageNumber;
-  }
-
-  public Vessel getVessel() {
-    return vessel;
-  }
-
-  public void setVessel(Vessel vessel) {
-    this.vessel = vessel;
-  }
-
-  public Port getDeparturePort() {
-    return departurePort;
-  }
-
-  public void setDeparturePort(Port departurePort) {
-    this.departurePort = departurePort;
-  }
-
-  public Port getArrivalPort() {
-    return arrivalPort;
-  }
-
-  public void setArrivalPort(Port arrivalPort) {
-    this.arrivalPort = arrivalPort;
-  }
-
-  public LocalDateTime getDepartureTime() {
-    return departureTime;
-  }
-
-  public void setDepartureTime(LocalDateTime departureTime) {
-    this.departureTime = departureTime;
-  }
-
-  public LocalDateTime getArrivalTime() {
-    return arrivalTime;
-  }
-
-  public void setArrivalTime(LocalDateTime arrivalTime) {
-    this.arrivalTime = arrivalTime;
-  }
-
-  public VoyageStatus getStatus() {
-    return status;
-  }
-
-  public void setStatus(VoyageStatus status) {
-    this.status = status;
-  }
-
-  public int getMaxCapacityTeu() {
-    return maxCapacityTeu;
-  }
-
-  public void setMaxCapacityTeu(int maxCapacityTeu) {
-    this.maxCapacityTeu = maxCapacityTeu;
-  }
-
-  public boolean isBookingOpen() {
-    return bookingOpen;
-  }
-
-  public void setBookingOpen(boolean bookingOpen) {
-    this.bookingOpen = bookingOpen;
-  }
 }

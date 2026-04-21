@@ -3,7 +3,13 @@ package com.shipping.freightops.dto;
 import com.shipping.freightops.entity.Voyage;
 import com.shipping.freightops.enums.VoyageStatus;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class VoyageTrackingResponse {
   private String voyageNumber;
   private VoyageStatus status;
@@ -21,29 +27,5 @@ public class VoyageTrackingResponse {
     dto.departureTime = voyage.getDepartureTime();
     dto.arrivalTime = voyage.getArrivalTime();
     return dto;
-  }
-
-  public String getVoyageNumber() {
-    return voyageNumber;
-  }
-
-  public VoyageStatus getStatus() {
-    return status;
-  }
-
-  public String getDeparturePort() {
-    return departurePort;
-  }
-
-  public String getArrivalPort() {
-    return arrivalPort;
-  }
-
-  public LocalDateTime getDepartureTime() {
-    return departureTime;
-  }
-
-  public LocalDateTime getArrivalTime() {
-    return arrivalTime;
   }
 }

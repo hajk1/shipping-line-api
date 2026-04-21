@@ -5,7 +5,13 @@ import com.shipping.freightops.enums.ContainerType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class CreateContainerRequest {
 
   @NotBlank(message = "Container code is required")
@@ -19,28 +25,4 @@ public class CreateContainerRequest {
   /** Must be one of: DRY, REEFER, OPEN_TOP, FLAT_RACK, TANK. */
   @NotNull(message = "Container type is required")
   private ContainerType type;
-
-  public String getContainerCode() {
-    return containerCode;
-  }
-
-  public void setContainerCode(String containerCode) {
-    this.containerCode = containerCode;
-  }
-
-  public ContainerSize getSize() {
-    return size;
-  }
-
-  public void setSize(ContainerSize size) {
-    this.size = size;
-  }
-
-  public ContainerType getType() {
-    return type;
-  }
-
-  public void setType(ContainerType type) {
-    this.type = type;
-  }
 }

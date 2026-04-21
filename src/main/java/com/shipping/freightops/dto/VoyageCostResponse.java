@@ -3,7 +3,13 @@ package com.shipping.freightops.dto;
 import com.shipping.freightops.entity.VoyageCost;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class VoyageCostResponse {
   private Long id;
   private Long voyageId;
@@ -21,29 +27,5 @@ public class VoyageCostResponse {
     dto.createdAt = entity.getCreatedAt();
     dto.updatedAt = entity.getUpdatedAt();
     return dto;
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public Long getVoyageId() {
-    return voyageId;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public BigDecimal getAmountUsd() {
-    return amountUsd;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
   }
 }

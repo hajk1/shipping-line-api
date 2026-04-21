@@ -5,8 +5,14 @@ import com.shipping.freightops.enums.ContainerType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** A shipping container identified by its BIC code (e.g. MSCU1234567). */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "containers")
 public class Container extends BaseEntity {
@@ -29,8 +35,6 @@ public class Container extends BaseEntity {
   @Column(nullable = false)
   private int teu;
 
-  public Container() {}
-
   public Container(String containerCode, ContainerSize size, ContainerType type) {
     this.containerCode = containerCode;
     this.size = size;
@@ -38,32 +42,8 @@ public class Container extends BaseEntity {
     this.teu = size.getTeu();
   }
 
-  public String getContainerCode() {
-    return containerCode;
-  }
-
-  public void setContainerCode(String containerCode) {
-    this.containerCode = containerCode;
-  }
-
-  public ContainerSize getSize() {
-    return size;
-  }
-
   public void setSize(ContainerSize size) {
     this.size = size;
     this.teu = size.getTeu();
-  }
-
-  public ContainerType getType() {
-    return type;
-  }
-
-  public void setType(ContainerType type) {
-    this.type = type;
-  }
-
-  public int getTeu() {
-    return teu;
   }
 }
