@@ -55,7 +55,8 @@ public class InvoiceEmailService {
   /** Build email request with subject, body, and attachment */
   private void sendInvoiceEmail(FreightOrder order, byte[] invoicePdf) {
     String invoiceNo = generateInvoiceNumber(order);
-    String subject = String.format("Invoice %s - APGL Shipping", invoiceNo);
+    String voyageNo = generateVoyageNumber(order);
+    String subject = String.format("Invoice %s - Voyage %s", invoiceNo, voyageNo);
     String body =
         String.format(
             "Dear %s,\n\nPlease find your invoice attached. Thank you for your business.\n\nBest regards,\nAPGL Freight Operations",
@@ -73,5 +74,10 @@ public class InvoiceEmailService {
   /** Generate invoice number based on year and order ID */
   private String generateInvoiceNumber(FreightOrder order) {
     return String.format("INV-%d-%05d", LocalDate.now().getYear(), order.getId());
+  }
+
+  /** Generate voyage number in format VOY-XXXXX */
+  private String generateVoyageNumber(FreightOrder order) {
+    return String.format("VOY-%05d", order.getVoyage().getId());
   }
 }
