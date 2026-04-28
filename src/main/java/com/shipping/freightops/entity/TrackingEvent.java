@@ -38,6 +38,7 @@ public class TrackingEvent extends BaseEntity {
       String performedBy,
       LocalDateTime eventTime) {
     this.freightOrder = freightOrder;
+    this.eventType = eventType;
     this.description = description;
     this.location = location;
     this.performedBy = performedBy;
