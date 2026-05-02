@@ -73,7 +73,34 @@ credentials `freight/freight`).
 The server starts on **http://localhost:8080**. On first boot, `data.sql` seeds sample ports, a
 vessel, and containers.
 
-### 3. Try the API
+### 3. Configure Email (Optional - for invoice sending)
+
+The application includes email functionality using SMTP. For local development, use **MailHog** to capture emails without sending them:
+
+**Start MailHog:**
+
+```bash
+docker run --rm -p 1025:1025 -p 8025:8025 mailhog/mailhog
+```
+
+- SMTP server: `localhost:1025` (configured in `application.properties`)
+- Web UI: **http://localhost:8025** — view all captured emails in real-time
+
+The `application.properties` is pre-configured:
+```properties
+spring.mail.host=localhost
+spring.mail.port=1025
+app.email.enabled=true
+app.email.from-address=noreply@apgl-shipping.com
+app.email.reply-to=support@apgl-shipping.com
+```
+
+To disable email sending (e.g., in tests):
+```properties
+app.email.enabled=false
+```
+
+### 4. Try the API
 
 **Create a vessel:**
 
@@ -115,6 +142,13 @@ curl -X POST http://localhost:8080/api/v1/freight-orders \
 ```bash
 curl http://localhost:8080/api/v1/freight-orders/1/invoice --output invoice.pdf
 ```
+
+**Send invoice to customer email:**
+```bash
+curl -X POST http://localhost:8080/api/v1/invoices/1/send
+```
+
+(Requires order status = DELIVERED; email is sent to customer's registered email address)
 
 ## Running Tests
 
