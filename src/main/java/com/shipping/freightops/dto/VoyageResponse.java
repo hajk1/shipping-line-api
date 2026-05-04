@@ -13,6 +13,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class VoyageResponse {
+  private Long id;
   private String voyageNumber;
   private String vesselName;
   private String departurePortName;
@@ -25,6 +26,7 @@ public class VoyageResponse {
 
   // voyage response format
   public VoyageResponse(Voyage voyage) {
+    id = voyage.getId();
     voyageNumber = voyage.getVoyageNumber();
     vesselName = voyage.getVessel().getName();
     departurePortName = voyage.getDeparturePort().getName();

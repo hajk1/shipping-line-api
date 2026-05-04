@@ -61,6 +61,8 @@ public class VesselControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").exists())
+        .andExpect(jsonPath("$.id").isNotEmpty())
         .andExpect(jsonPath("$.name").value("MV Test"))
         .andExpect(jsonPath("$.imoNumber").value("8888888"))
         .andExpect(jsonPath("$.capacityTeu").value(3000));
@@ -119,6 +121,8 @@ public class VesselControllerTest {
     mockMvc
         .perform(get("/api/v1/vessels"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray());
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$[0].id").exists())
+        .andExpect(jsonPath("$[0].id").isNotEmpty());
   }
 }

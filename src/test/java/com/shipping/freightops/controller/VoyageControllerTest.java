@@ -108,7 +108,9 @@ public class VoyageControllerTest {
     mockMvc
         .perform(MockMvcRequestBuilders.get("/api/v1/voyages"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray());
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$[0].id").exists())
+        .andExpect(jsonPath("$[0].id").isNotEmpty());
   }
 
   @Test
@@ -119,7 +121,9 @@ public class VoyageControllerTest {
             MockMvcRequestBuilders.get("/api/v1/voyages")
                 .param("status", voyage.getStatus().toString()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray());
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$[0].id").exists())
+        .andExpect(jsonPath("$[0].id").isNotEmpty());
   }
 
   @Test
@@ -128,7 +132,9 @@ public class VoyageControllerTest {
     mockMvc
         .perform(MockMvcRequestBuilders.get("/api/v1/voyages/" + voyage.getId()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isMap());
+        .andExpect(jsonPath("$").isMap())
+        .andExpect(jsonPath("$.id").exists())
+        .andExpect(jsonPath("$.id").isNotEmpty());
   }
 
   @Test
@@ -157,7 +163,9 @@ public class VoyageControllerTest {
             post("/api/v1/voyages")
                 .contentType("application/json")
                 .content(objectMapper.writeValueAsString(voyageRequest)))
-        .andExpect(status().isCreated());
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").exists())
+        .andExpect(jsonPath("$.id").isNotEmpty());
   }
 
   @Test

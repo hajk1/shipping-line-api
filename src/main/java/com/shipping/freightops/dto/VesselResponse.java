@@ -10,6 +10,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class VesselResponse {
+  private Long id;
   private String name;
   private String imoNumber;
   private int capacityTeu;
@@ -17,6 +18,7 @@ public class VesselResponse {
   /** Factory method to map entity → response DTO. */
   public static VesselResponse fromEntity(Vessel vessel) {
     VesselResponse dto = new VesselResponse();
+    dto.id = vessel.getId();
     dto.name = vessel.getName();
     dto.capacityTeu = vessel.getCapacityTeu();
     dto.imoNumber = vessel.getImoNumber();
